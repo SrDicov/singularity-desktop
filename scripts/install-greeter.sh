@@ -8,10 +8,25 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ "$EUID" -ne 0 ]; then
     if [ -n "$container" ]; then
         exec host-spawn run0 bash "$0" "$@"
-    else
+    elif [ -d /run/systemd/system ] && command -v run0 >/dev/null; then
         exec run0 bash "$0" "$@"
+    elif command -v sudo >/dev/null; then
+        exec sudo bash "$0" "$@"
+    elif command -v doas >/dev/null; then
+        exec doas bash "$0" "$@"
+    else
+        echo "ERROR: need root (run as root, or install sudo/doas)." >&2
+        exit 1
     fi
 fi
+
+has_systemd() {
+    [ -d /run/systemd/system ] && command -v systemctl >/dev/null
+}
+
+has_runit() {
+    [ -d /etc/sv ] && [ -d /var/service ]
+}
 
 if [ -x /opt/local/bin/labwc ]; then
     PREFIX="/opt/local"
@@ -86,10 +101,12 @@ EOF
 # packages create it, but immutable/atomic ones (e.g. Vanilla OS) may not,
 # leaving greetd failing with "configured default session user 'greetd' not
 # found". Create it if missing so the install is self-sufficient.
+# nologin lives in different places per distro (/usr/sbin vs /usr/bin).
+NOLOGIN="$(command -v nologin || echo /usr/sbin/nologin)"
 if ! id greetd >/dev/null 2>&1; then
     useradd --system --create-home --home-dir /var/lib/greetd \
-        --shell /usr/sbin/nologin greetd 2>/dev/null \
-        || useradd --system --shell /usr/sbin/nologin greetd 2>/dev/null \
+        --shell "$NOLOGIN" greetd 2>/dev/null \
+        || useradd --system --shell "$NOLOGIN" greetd 2>/dev/null \
         || true
 fi
 if id greetd >/dev/null 2>&1; then
@@ -105,18 +122,31 @@ fi
 # greetd must own tty1; a getty left running on the same VT fights it and labwc
 # cannot hold the DRM master (atomic commit: Permission denied). Stop the getty
 # whenever greetd runs, the standard display-manager-owns-VT pattern.
-mkdir -p /etc/systemd/system/greetd.service.d
-cat > /etc/systemd/system/greetd.service.d/10-vt.conf <<EOF
+if has_systemd; then
+    mkdir -p /etc/systemd/system/greetd.service.d
+    cat > /etc/systemd/system/greetd.service.d/10-vt.conf <<EOF
 [Unit]
 Conflicts=getty@tty1.service
 After=getty@tty1.service
 EOF
-systemctl daemon-reload 2>/dev/null || true
+    systemctl daemon-reload 2>/dev/null || true
+elif has_runit; then
+    # runit (Void): enable greetd, drop the getty on tty1 so greetd owns the VT.
+    [ -e /var/service/greetd ] || ln -s /etc/sv/greetd /var/service/ 2>/dev/null || true
+    rm -f /var/service/agetty-tty1 2>/dev/null || true
+fi
 
 echo "Singularity greeter configured for greetd in $GREETD_DIR."
 echo
-echo "To enable it as your login manager:"
-echo "  1. Install greetd if it is not already (package 'greetd')."
-echo "  2. Disable your current display manager, e.g. 'systemctl disable gdm'."
-echo "  3. Enable greetd: 'systemctl enable greetd'."
-echo "  4. Reboot."
+if has_runit && ! has_systemd; then
+    echo "runit detected:"
+    echo "  - greetd enabled (make sure packages 'greetd' and 'elogind' are installed)."
+    echo "  - required services: ln -s /etc/sv/dbus /var/service/ ; ln -s /etc/sv/elogind /var/service/"
+    echo "  - disable any other display manager, then reboot."
+else
+    echo "To enable it as your login manager:"
+    echo "  1. Install greetd if it is not already (package 'greetd')."
+    echo "  2. Disable your current display manager, e.g. 'systemctl disable gdm'."
+    echo "  3. Enable greetd: 'systemctl enable greetd'."
+    echo "  4. Reboot."
+fi

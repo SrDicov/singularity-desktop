@@ -51,9 +51,15 @@ install-session:
 	@if [ -n "$$container" ]; then \
 		host-spawn run0 bash $(CURDIR)/subprojects/singularity-session/scripts/install-session.sh; \
 		host-spawn run0 bash $(CURDIR)/subprojects/singularity-session/scripts/install-gdm-config.sh; \
-	else \
+	elif [ -d /run/systemd/system ] && command -v run0 >/dev/null; then \
 		run0 bash $(CURDIR)/subprojects/singularity-session/scripts/install-session.sh; \
 		run0 bash $(CURDIR)/subprojects/singularity-session/scripts/install-gdm-config.sh; \
+	elif command -v sudo >/dev/null; then \
+		sudo bash $(CURDIR)/subprojects/singularity-session/scripts/install-session.sh; \
+		sudo bash $(CURDIR)/subprojects/singularity-session/scripts/install-gdm-config.sh; \
+	else \
+		doas bash $(CURDIR)/subprojects/singularity-session/scripts/install-session.sh; \
+		doas bash $(CURDIR)/subprojects/singularity-session/scripts/install-gdm-config.sh; \
 	fi
 
 deploy-host:
@@ -74,8 +80,12 @@ gesture-runtime:
 install-greeter:
 	@if [ -n "$$container" ]; then \
 		host-spawn run0 bash $(CURDIR)/scripts/install-greeter.sh; \
-	else \
+	elif [ -d /run/systemd/system ] && command -v run0 >/dev/null; then \
 		run0 bash $(CURDIR)/scripts/install-greeter.sh; \
+	elif command -v sudo >/dev/null; then \
+		sudo bash $(CURDIR)/scripts/install-greeter.sh; \
+	else \
+		doas bash $(CURDIR)/scripts/install-greeter.sh; \
 	fi
 
 .PHONY: all compile labwc gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter
