@@ -19,20 +19,24 @@ RUN apt-get update && \
       cmake \
       gettext \
       git \
+      glslc \
       gobject-introspection \
       libarchive-dev \
       libatspi2.0-dev \
       libcairo2-dev \
       libcmocka-dev \
+      libcolord-dev \
       libcups2-dev \
       libdbusmenu-glib-dev \
       libdisplay-info-dev \
       libdrm-dev \
       libenchant-2-dev \
+      libepoxy-dev \
       libevdev-dev \
       libfido2-dev \
       libfontconfig-dev \
       libfreetype-dev \
+      libfribidi-dev \
       libfuse3-dev \
       libgcrypt20-dev \
       libgdk-pixbuf-2.0-dev \
@@ -42,6 +46,8 @@ RUN apt-get update && \
       libgles-dev \
       libgnutls28-dev \
       libgphoto2-dev \
+      libgraphene-1.0-dev \
+      libgstreamer-plugins-bad1.0-dev \
       libgstreamer-plugins-base1.0-dev \
       libgstreamer1.0-dev \
       libgtk-4-dev \
@@ -50,6 +56,7 @@ RUN apt-get update && \
       libgudev-1.0-dev \
       libharfbuzz-dev \
       libinput-dev \
+      libjpeg-dev \
       libjson-glib-dev \
       liblcms2-dev \
       libliftoff-dev \
@@ -57,6 +64,7 @@ RUN apt-get update && \
       libmtdev-dev \
       libnm-dev \
       libpam0g-dev \
+      libpango1.0-dev \
       libpeas-2-dev \
       libpipewire-0.3-dev \
       libpixman-1-dev \
@@ -78,6 +86,7 @@ RUN apt-get update && \
       libudev-dev \
       libupower-glib-dev \
       libvte-2.91-gtk4-dev \
+      libvulkan-dev \
       libwacom-dev \
       libwayland-dev \
       libwebkitgtk-6.0-dev \
@@ -91,8 +100,15 @@ RUN apt-get update && \
       libxcb-res0-dev \
       libxcb-xfixes0-dev \
       libxcb-xinput-dev \
+      libxcursor-dev \
+      libxdamage-dev \
+      libxext-dev \
+      libxfixes-dev \
+      libxi-dev \
+      libxinerama-dev \
       libxkbcommon-dev \
       libxml2-dev \
+      libxrandr-dev \
       libzbar-dev \
       libzstd-dev \
       freerdp3-dev \
@@ -133,6 +149,28 @@ RUN meson setup build \
       -Dlibwacom=true \
       -Dlua-plugins=disabled && \
     meson compile -C subprojects/libinput/build && \
+    meson setup build-sit subprojects/sit \
+      --prefix=/opt/singularity \
+      --libdir=lib \
+      --buildtype=release \
+      --wrap-mode=nofallback \
+      -Dmedia-gstreamer=enabled \
+      -Dprint-cups=enabled \
+      -Dcolord=enabled \
+      -Dvulkan=enabled \
+      -Dbroadway-backend=false \
+      -Dintrospection=disabled \
+      -Ddocumentation=false \
+      -Dscreenshots=false \
+      -Dman-pages=false \
+      -Dbuild-demos=false \
+      -Dbuild-testsuite=false \
+      -Dbuild-examples=false \
+      -Dbuild-tests=false && \
+    meson compile -C build-sit && \
+    DESTDIR=/stage meson install -C build-sit && \
+    rm -rf /stage/opt/singularity/include/gtk-4.0 /stage/opt/singularity/lib/pkgconfig/gtk4*.pc \
+      /stage/opt/singularity/lib/pkgconfig/sit-1.0.pc /stage/opt/singularity/bin/gtk4-* && \
     DESTDIR=/stage meson install -C build && \
     DESTDIR=/stage meson install -C subprojects/labwc/build && \
     find subprojects/libinput/build -maxdepth 1 \( -type f -o -type l \) -name 'libinput.so.10*' \
