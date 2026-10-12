@@ -210,7 +210,7 @@
     <key name="background-effect" type="s">
       <default>'disabled'</default>
       <summary>Background Effect</summary>
-      <description>Material applied behind translucent desktop surfaces: disabled, glass, or blur.</description>
+      <description>Material applied behind translucent desktop surfaces: disabled, glass, liquid, or blur.</description>
     </key>
     <key name="interface-density" type="s">
       <choices>

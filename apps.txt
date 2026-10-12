@@ -25,6 +25,7 @@ singularity-connections core
 singularity-scanner core
 singularity-passwords core
 singularity-lettere core
+singularity-messages core
 singularity-backups core
 singularity-printers core
 singularity-nearby-app core
