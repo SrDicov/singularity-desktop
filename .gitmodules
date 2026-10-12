@@ -268,3 +268,11 @@
 [submodule "subprojects/vetro"]
 	path = subprojects/vetro
 	url = https://github.com/singularityos-lab/vetro.git
+[submodule "subprojects/sit"]
+	path = subprojects/sit
+	url = https://github.com/singularityos-lab/sit.git
+	branch = main
+[submodule "subprojects/singularity-messages"]
+	path = subprojects/singularity-messages
+	url = https://github.com/singularityos-lab/singularity-messages.git
+	branch = main

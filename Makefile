@@ -18,6 +18,13 @@ LIBFPRINT_REPO = https://gitlab.freedesktop.org/3v1n0/libfprint.git
 LIBFPRINT_TAG = v1.94.9+tod1
 LIBFPRINT_COMMIT = d25fa50748d6edf5be0f472f157a3b3020cb4113
 LIBFPRINT_OPTIONS = --prefix=/usr --libdir=lib/x86_64-linux-gnu --buildtype=release --pkg-config-path=$(GUSB_STAGE)/lib/pkgconfig -Ddrivers=default -Dtod=true -Dintrospection=false -Ddoc=false -Dgtk-examples=false -Dinstalled-tests=false -Dudev_rules=disabled -Dudev_hwdb=disabled -Dtod_extra_drivers_dir=$(FPRINT_DRIVERS_DIR)/tod-1
+SIT_DIR = subprojects/sit
+SIT_BUILD = $(BUILD_DIR)-sit
+SIT_STAGE = $(abspath $(SIT_BUILD))/stage
+SIT_OPTIONS = --prefix=$(DEPLOY_PREFIX) --libdir=lib --buildtype=release --wrap-mode=nofallback -Dx11-backend=true -Dwayland-backend=true -Dbroadway-backend=false -Dmedia-gstreamer=enabled -Dprint-cups=enabled -Dcolord=enabled -Dvulkan=enabled -Dintrospection=disabled -Ddocumentation=false -Dscreenshots=false -Dman-pages=false -Dbuild-demos=false -Dbuild-testsuite=false -Dbuild-examples=false -Dbuild-tests=false
+SIT_GLIB_MINOR ?= 86
+SIT_COMPAT = -Dc_args="['-include','$(abspath scripts/sit-host-compat.h)','-DSIT_GLIB_MINOR=$(SIT_GLIB_MINOR)']" -Dc_link_args=-lm
+SIT_ENABLED = $(if $(wildcard $(SIT_DIR)/meson.build),sit)
 GESTURE_DIR = subprojects/singularity-gestures
 GESTURES ?= enabled
 APPS ?= all
@@ -76,9 +83,18 @@ libfprint: gusb $(LIBFPRINT_BUILD)/build.ninja
 libfprint-test: libfprint
 	LD_LIBRARY_PATH=$(GUSB_STAGE)/lib meson test -C $(LIBFPRINT_BUILD) --print-errorlogs --no-suite data
 
+$(SIT_BUILD)/build.ninja:
+	meson setup $(SIT_BUILD) $(SIT_DIR) $(SIT_OPTIONS) $(SIT_COMPAT) || { rm -rf $(SIT_BUILD); meson setup $(SIT_BUILD) $(SIT_DIR) $(SIT_OPTIONS) $(SIT_COMPAT); }
+
+sit: $(SIT_BUILD)/build.ninja
+	meson configure $(SIT_BUILD) $(filter -D%,$(SIT_OPTIONS)) $(SIT_COMPAT)
+	meson compile -C $(SIT_BUILD)
+	rm -rf $(SIT_STAGE)
+	meson install -C $(SIT_BUILD) --destdir $(SIT_STAGE) --quiet
+
 BUILD_LOCK ?= $(if $(wildcard $(BUILD_DIR)/.build.lock),flock $(BUILD_DIR)/.build.lock)
 
-compile: gesture-runtime $(BUILD_DIR)/build.ninja labwc libinput libfprint
+compile: gesture-runtime $(BUILD_DIR)/build.ninja labwc libinput libfprint $(SIT_ENABLED)
 	$(BUILD_LOCK) meson configure $(BUILD_DIR) -Dapps=$(APPS) $(PREFIX_OPTIONS)
 	$(BUILD_LOCK) ninja -C $(BUILD_DIR) subprojects/libsingularity/Singularity-1.0.gir
 	mkdir -p $(HOME)/.local/share/gir-1.0
@@ -86,7 +102,7 @@ compile: gesture-runtime $(BUILD_DIR)/build.ninja labwc libinput libfprint
 	$(BUILD_LOCK) meson compile -C $(BUILD_DIR)
 
 clean:
-	rm -rf $(BUILD_DIR) $(LABWC_BUILD) $(LIBINPUT_BUILD) $(LIBFPRINT_BUILD) $(GUSB_BUILD) $(GUSB_STAGE)
+	rm -rf $(BUILD_DIR) $(SIT_BUILD) $(LABWC_BUILD) $(LIBINPUT_BUILD) $(LIBFPRINT_BUILD) $(GUSB_BUILD) $(GUSB_STAGE)
 
 install: compile
 	@if [ -n "$$container" ]; then \
@@ -95,8 +111,9 @@ install: compile
 		find /usr/lib /usr/local/lib -name "libsfdo*.so*" -exec cp -a {} $(BUILD_DIR)/extra-libs/ \; 2>/dev/null || true; \
 		find /usr/lib /usr/local/lib -name "libgtk4-layer-shell*.so*" -exec cp -a {} $(BUILD_DIR)/extra-libs/ \; 2>/dev/null || true; \
 		find /usr/lib /usr/local/lib -name "libpeas-2*.so*" -exec cp -a {} $(BUILD_DIR)/extra-libs/ \; 2>/dev/null || true; \
+		if [ -n "$(SIT_ENABLED)" ]; then find /usr/lib /usr/local/lib -name "libjpeg.so.8*" -exec cp -a {} $(BUILD_DIR)/extra-libs/ \; 2>/dev/null || true; fi; \
 	fi
-	DEPLOY_PREFIX=$(DEPLOY_PREFIX) bash scripts/deploy-to-host.sh
+	DEPLOY_PREFIX=$(DEPLOY_PREFIX) SIT_STAGE=$(if $(SIT_ENABLED),$(SIT_STAGE)) bash scripts/deploy-to-host.sh
 	@if [ -n "$$container" ]; then \
 		host-spawn systemctl --user try-restart xdg-desktop-portal-singularity.service || true; \
 	else \
@@ -152,4 +169,4 @@ install-greeter:
 		sh $(CURDIR)/scripts/run0-tty.sh bash $(CURDIR)/scripts/install-greeter.sh; \
 	fi
 
-.PHONY: all compile labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter
+.PHONY: all compile sit labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter

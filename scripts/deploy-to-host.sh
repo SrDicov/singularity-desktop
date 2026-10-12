@@ -41,6 +41,7 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
             --setenv=ORIG_USER="$USER" \
             --setenv=APPS="${APPS:-all}" \
             --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
+            --setenv=SIT_STAGE="${SIT_STAGE:-}" \
             --setenv=container=host-spawned \
             bash "$0" "$@"
     else
@@ -49,6 +50,7 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
             --setenv=ORIG_USER="$USER" \
             --setenv=APPS="${APPS:-all}" \
             --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
+            --setenv=SIT_STAGE="${SIT_STAGE:-}" \
             bash "$0" "$@"
     fi
 fi
@@ -163,6 +165,7 @@ mkdir -p "$OPT_BIN" "$OPT_LIB" "$OPT_APPS" "$OPT_ICONS" "$OPT_THEMES" \
 acopy() {
     local src="$1" dest="$2"
     cp "$src" "$dest.new"
+    sync "$dest.new"
     mv "$dest.new" "$dest"
 }
 
@@ -174,7 +177,9 @@ runtime_problems() {
     for f in "$OPT_BIN"/* "$PREFIX"/libexec/* "$OPT_LIB"/*.so* "$OPT_LIB"/singularity/widgets/*.so "$OPT_LIB"/fprint/*.so* "$OPT_PLUGINS"/*/*.so; do
         [ -f "$f" ] && [ ! -L "$f" ] || continue
         [ "$(head -c 4 "$f" 2>/dev/null | tail -c 3)" = "ELF" ] || continue
-        out=$(LD_LIBRARY_PATH="$OPT_LIB/fprint:$OPT_LIB" ldd "$f" 2>&1 | grep -E "not found" | sed 's/^[[:space:]]*//' | sort -u)
+        relocate=""
+        case "$f" in "$OPT_LIB"/*.so*) relocate="-r" ;; esac
+        out=$(LD_LIBRARY_PATH="$OPT_LIB/fprint:$OPT_LIB" ldd $relocate "$f" 2>&1 | grep -E "not found|undefined symbol" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*(\/.*)$//' | sort -u)
         [ -n "$out" ] && printf '%s\n' "$out" | sed "s|^|$(basename "$f"): |"
     done
     if [ -x "$OPT_BIN/labwc" ] && ! env -i PATH=/usr/bin:/bin LD_LIBRARY_PATH="$OPT_LIB" "$OPT_BIN/labwc" --version >/dev/null 2>&1; then
@@ -329,6 +334,34 @@ if [ -f "$BUILD/subprojects/libsingularity/libsingularity-system.so.0.1.0" ]; th
     ln -sf libsingularity-system.so.0.1.0 "$OPT_LIB/libsingularity-system.so.0"
     ln -sf libsingularity-system.so.0.1.0 "$OPT_LIB/libsingularity-system.so"
     echo "  libsingularity-system.so.0.1.0"
+fi
+
+SIT_LIB="$(find "${SIT_STAGE:-/nonexistent}" -path '*/lib/libgtk-4.so.1.*' -type f 2>/dev/null | head -n 1)"
+if [ -n "$SIT_LIB" ]; then
+    SIT_ROOT="$(dirname "$(dirname "$SIT_LIB")")"
+    acopy "$SIT_LIB" "$OPT_LIB/$(basename "$SIT_LIB")"
+    ln -sf "$(basename "$SIT_LIB")" "$OPT_LIB/libgtk-4.so.1"
+    if [ -d "$SIT_ROOT/lib/gtk-4.0" ]; then
+        rm -rf "$OPT_LIB/gtk-4.0"
+        cp -a "$SIT_ROOT/lib/gtk-4.0" "$OPT_LIB/gtk-4.0"
+    fi
+    SIT_IMMODULES="$OPT_LIB/gtk-4.0/4.0.0/immodules"
+    for m in "$SYSROOT"/usr/lib/*/gtk-4.0/4.0.0/immodules/*.so "$SYSROOT"/usr/lib64/gtk-4.0/4.0.0/immodules/*.so; do
+        [ -f "$m" ] || continue
+        mkdir -p "$SIT_IMMODULES"
+        [ -e "$SIT_IMMODULES/$(basename "$m")" ] || ln -sf "${m#$SYSROOT}" "$SIT_IMMODULES/$(basename "$m")"
+    done
+    for schema in "$SIT_ROOT"/share/glib-2.0/schemas/org.gtk.gtk4.*.gschema.xml; do
+        [ -f "$schema" ] && cp "$schema" "$OPT_SCHEMAS/"
+    done
+    if [ -d "$SIT_ROOT/share/locale" ]; then
+        while IFS= read -r mo; do
+            rel="${mo#$SIT_ROOT/share/locale/}"
+            mkdir -p "$OPT_SHARE/locale/$(dirname "$rel")"
+            cp "$mo" "$OPT_SHARE/locale/$rel"
+        done < <(find "$SIT_ROOT/share/locale" -name 'gtk40*.mo' -type f)
+    fi
+    echo "  $(basename "$SIT_LIB") (SIT)"
 fi
 
 GESTURE_LIB="$BUILD/subprojects/singularity-gestures/libsingularity-gesture.so.0.1.0"
