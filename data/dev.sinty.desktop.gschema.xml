@@ -234,6 +234,36 @@
       <summary>Blur Strength</summary>
       <description>Strength of the compositor blur used by background materials.</description>
     </key>
+    <key name="card-transparency" type="i">
+      <range min="0" max="90"/>
+      <default>12</default>
+      <summary>Menu and Card Transparency</summary>
+      <description>Percentage of background transparency of menus, notifications, OSDs and dialogs while a background effect is active.</description>
+    </key>
+    <key name="glass-tint" type="i">
+      <range min="0" max="40"/>
+      <default>8</default>
+      <summary>Glass Tint</summary>
+      <description>Percentage of the accent color mixed into glass and blur materials.</description>
+    </key>
+    <key name="glass-vibrancy" type="i">
+      <range min="0" max="100"/>
+      <default>50</default>
+      <summary>Glass Vibrancy</summary>
+      <description>Color saturation of the backdrop seen through glass and blur materials.</description>
+    </key>
+    <key name="liquid-refraction" type="i">
+      <range min="0" max="100"/>
+      <default>50</default>
+      <summary>Liquid Glass Refraction</summary>
+      <description>How strongly the edge of liquid glass bends the backdrop.</description>
+    </key>
+    <key name="liquid-highlight" type="i">
+      <range min="0" max="100"/>
+      <default>50</default>
+      <summary>Liquid Glass Edge Light</summary>
+      <description>Intensity of the light on the rim of liquid glass.</description>
+    </key>
     <key name="dark-mode" type="b">
       <default>true</default>
       <summary>Dark Mode</summary>
