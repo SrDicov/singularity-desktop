@@ -4,3 +4,4 @@ build-*
 fingerprint.json
 subprojects/*/build
 subprojects/*/build-*
+!subprojects/*/build-aux
