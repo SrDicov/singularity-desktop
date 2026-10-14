@@ -46,6 +46,14 @@ all: compile
 prepare-deps:
 	bash scripts/prepare-deps.sh
 
+ifeq (install-app,$(firstword $(MAKECMDGOALS)))
+INSTALL_APPS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+$(eval $(INSTALL_APPS):;@:)
+endif
+
+install-app: $(BUILD_DIR)/build.ninja
+	DEPLOY_PREFIX=$(DEPLOY_PREFIX) BUILD_DIR=$(BUILD_DIR) bash scripts/install-app.sh $(INSTALL_APPS) $(APP)
+
 $(BUILD_DIR)/build.ninja: | gesture-runtime
 	meson setup $(BUILD_DIR) $(MESON_OPTIONS) || { rm -rf $(BUILD_DIR); meson setup $(BUILD_DIR) $(MESON_OPTIONS); }
 
@@ -175,4 +183,4 @@ install-greeter:
 		sh $(CURDIR)/scripts/run0-tty.sh bash $(CURDIR)/scripts/install-greeter.sh; \
 	fi
 
-.PHONY: all prepare-deps compile sit labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter
+.PHONY: all prepare-deps install-app compile sit labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter

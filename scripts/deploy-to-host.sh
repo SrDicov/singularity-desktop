@@ -42,6 +42,7 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
             --setenv=APPS="${APPS:-all}" \
             --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
             --setenv=SIT_STAGE="${SIT_STAGE:-}" \
+            --setenv=ONLY_APPS="${ONLY_APPS:-}" \
             --setenv=container=host-spawned \
             bash "$0" "$@"
     else
@@ -51,6 +52,7 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
             --setenv=APPS="${APPS:-all}" \
             --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
             --setenv=SIT_STAGE="${SIT_STAGE:-}" \
+            --setenv=ONLY_APPS="${ONLY_APPS:-}" \
             bash "$0" "$@"
     fi
 fi
@@ -123,6 +125,7 @@ install_build_files() {
         --prefix "$PREFIX" \
         --sysroot "$SYSROOT" \
         --skip "$SKIPPED_APPS" \
+        --only "${ONLY_APPS:-}" \
         --dbus-list "$APP_DBUS_SERVICES_FILE" \
         ${DEPLOY_MANIFEST:+--manifest "$DEPLOY_MANIFEST"} \
         "${extra[@]}"
@@ -161,6 +164,18 @@ mkdir -p "$OPT_BIN" "$OPT_LIB" "$OPT_APPS" "$OPT_ICONS" "$OPT_THEMES" \
          "$OPT_SCHEMAS" "$OPT_GIR" "$OPT_TYPELIB" "$OPT_SING" "$OPT_PLUGINS" \
          "$OPT_APP_SETTINGS" "$OPT_PORTAL" "$OPT_DBUS" "$OPT_BACKGROUNDS" \
          "$OPT_WIDGETS_LIB" "$OPT_WIDGETS_SHARE" "$OPT_SEARCH_PROVIDERS" "$OPT_FILES_ACTIONS"
+
+if [ -n "${ONLY_APPS:-}" ]; then
+    SKIPPED_APPS=""
+    echo "Installing only: $ONLY_APPS"
+    install_build_files
+    glib-compile-schemas "$OPT_SCHEMAS"
+    update-desktop-database "$OPT_APPS" 2>/dev/null || true
+    gtk-update-icon-cache -f "$OPT_ICONS/hicolor" 2>/dev/null || true
+    host_only run_as_user gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1 || true
+    exit 0
+fi
 
 acopy() {
     local src="$1" dest="$2"

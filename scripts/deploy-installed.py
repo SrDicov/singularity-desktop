@@ -270,6 +270,7 @@ def main():
     parser.add_argument('--prefix', required=True)
     parser.add_argument('--sysroot', default='')
     parser.add_argument('--skip', default='')
+    parser.add_argument('--only', default='')
     parser.add_argument('--dbus-list')
     parser.add_argument('--manifest')
     parser.add_argument('--dry-run', action='store_true')
@@ -287,12 +288,15 @@ def main():
     layout = Layout(options, args.prefix, args.sysroot)
     installer = Installer(layout, args.dry_run)
     skipped = set(args.skip.split())
+    only = set(args.only.split())
     manifest = []
     bin_names = set()
     skipped_count = 0
     for src, dest in sorted(installed.items(), key=lambda item: item[1]):
         if owning_app(src) in skipped:
             skipped_count += 1
+            continue
+        if only and owning_app(src) not in only:
             continue
         kind, target, mirrors = layout.classify(dest)
         if kind == 'bin':
