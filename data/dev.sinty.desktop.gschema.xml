@@ -154,6 +154,10 @@
       <default>[]</default>
       <summary>List of recently used wallpaper URIs</summary>
     </key>
+    <key name="wallpaper-favorites" type="as">
+      <default>[]</default>
+      <summary>Favorite wallpaper paths</summary>
+    </key>
     <key name="artist-pack-apt-sources" type="as">
       <default>[]</default>
       <summary>Artist Pack apt sources</summary>
