@@ -4,7 +4,7 @@
   "name": "Singularity Desktop",
   "description": "The complete Singularity desktop session.",
   "version": "0.1.0",
-  "image": "ghcr.io/singularityos-lab/singularity-desktop@sha256:0f149d4decd9154904df5ce3f15c94fed005ae9cd004a6f99e48d141e2ae381d",
+  "image": "ghcr.io/singularityos-lab/singularity-desktop@sha256:03670eefdc2aeb45150540219804f244a47578f8b566c1f572386fa50ffdd525",
   "binaries": [
     "/opt/singularity/bin/singularity-cpak-session",
     "/opt/singularity/bin/singularity-labwc-session"
