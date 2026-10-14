@@ -37,7 +37,9 @@ endif
 export APPS
 DEPLOY_PREFIX ?= /opt/local
 PREFIX_OPTIONS = -Dprefix=$(DEPLOY_PREFIX) -Dlibdir=lib -Dlocalstatedir=/var/local
-MESON_OPTIONS = -Dgestures=$(GESTURES) -Dapps=$(APPS) $(PREFIX_OPTIONS)
+DEVTOOLS_FRONTEND ?= $(HOME)/.cache/singularity-browser/devtools-frontend
+DEVTOOLS_OPTIONS = $(if $(wildcard $(DEVTOOLS_FRONTEND)/devtools_app.html),-Dsingularity-browser:devtools_frontend=$(DEVTOOLS_FRONTEND))
+MESON_OPTIONS = -Dgestures=$(GESTURES) -Dapps=$(APPS) $(PREFIX_OPTIONS) $(DEVTOOLS_OPTIONS)
 
 all: compile
 
@@ -95,7 +97,7 @@ sit: $(SIT_BUILD)/build.ninja
 BUILD_LOCK ?= $(if $(wildcard $(BUILD_DIR)/.build.lock),flock $(BUILD_DIR)/.build.lock)
 
 compile: gesture-runtime $(BUILD_DIR)/build.ninja labwc libinput libfprint $(SIT_ENABLED)
-	$(BUILD_LOCK) meson configure $(BUILD_DIR) -Dapps=$(APPS) $(PREFIX_OPTIONS)
+	$(BUILD_LOCK) meson configure $(BUILD_DIR) -Dapps=$(APPS) $(PREFIX_OPTIONS) $(DEVTOOLS_OPTIONS)
 	$(BUILD_LOCK) ninja -C $(BUILD_DIR) subprojects/libsingularity/Singularity-1.0.gir
 	mkdir -p $(HOME)/.local/share/gir-1.0
 	cp $(BUILD_DIR)/subprojects/libsingularity/Singularity-1.0.gir $(HOME)/.local/share/gir-1.0/
