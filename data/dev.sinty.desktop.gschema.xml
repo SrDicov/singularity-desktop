@@ -176,7 +176,7 @@
       <default>[]</default>
       <summary>Artist Pack apt sources</summary>
       <description>List of apt repository base URIs treated as sources of
-        curated Artist Packs (ncz-wallpapers-* debs) by the Desktop settings'
+        curated Artist Packs by the Desktop settings'
         Artist Pack browser. Only packages whose apt candidate URI is under
         one of these bases are listed for browsing/installing. Empty means no
         source is trusted, so the browser shows nothing rather than silently
