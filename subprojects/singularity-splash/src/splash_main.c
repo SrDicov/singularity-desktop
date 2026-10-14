@@ -34,6 +34,7 @@ struct g_output {
     struct wl_surface *surface;
     struct zwlr_layer_surface_v1 *layer_surface;
     uint32_t width, height;
+    int32_t scale;
     bool configured;
     struct wl_callback *frame_cb;
     struct g_output *next;
@@ -93,6 +94,8 @@ static void kmsg_pump(void) {
 
 /* ── assets ─────────────────────────────────────────────────────────────── */
 
+#define LOGO_LOAD_SIZE (LOGINUI_BRAND_LOGO_SIZE * 3)
+
 static bool try_logo_file(const char *name) {
     if (!name || !name[0]) return false;
     const char *tpl[] = {
@@ -107,7 +110,7 @@ static bool try_logo_file(const char *name) {
     for (int i = 0; tpl[i]; i++) {
         char p[1024];
         snprintf(p, sizeof p, tpl[i], name);
-        if (access(p, R_OK) == 0) { logo = loginui_load_image(p, -1, 256); if (logo) return true; }
+        if (access(p, R_OK) == 0) { logo = loginui_load_image(p, -1, LOGO_LOAD_SIZE); if (logo) return true; }
     }
     return false;
 }
@@ -132,7 +135,9 @@ static void os_release_value(const char *key, char *out, size_t n) {
 }
 
 static void load_logo(void) {
-    logo = loginui_load_brand_logo();
+    const char *brand = getenv("SINGULARITY_SPLASH_LOGO");
+    if (!brand || !brand[0]) brand = LOGINUI_BRAND_LOGO_PATH;
+    logo = loginui_load_image(brand, LOGO_LOAD_SIZE, LOGO_LOAD_SIZE);
     if (logo) return;
     char logo_name[128], id[128];
     os_release_value("LOGO", logo_name, sizeof logo_name);
@@ -178,11 +183,13 @@ static void frame_done(void *data, struct wl_callback *cb, uint32_t time) {
 }
 static const struct wl_callback_listener frame_listener = { .done = frame_done };
 
-static void render_surface(struct wl_surface *surface, int w, int h, struct wl_callback **frame_slot) {
+static void render_surface(struct wl_surface *surface, int w, int h, int scale, struct wl_callback **frame_slot) {
     if (*frame_slot) return;
+    if (scale < 1) scale = 1;
     cairo_t *cr;
-    struct loginui_buffer *b = loginui_create_buffer(shm, w, h, &cr);
+    struct loginui_buffer *b = loginui_create_buffer(shm, w * scale, h * scale, &cr);
     if (!b) return;
+    cairo_scale(cr, scale, scale);
 
     cairo_push_group(cr);
     double now = mono_seconds();
@@ -199,18 +206,19 @@ static void render_surface(struct wl_surface *surface, int w, int h, struct wl_c
     cairo_destroy(cr);
     *frame_slot = wl_surface_frame(surface);
     wl_callback_add_listener(*frame_slot, &frame_listener, frame_slot);
+    wl_surface_set_buffer_scale(surface, scale);
     wl_surface_attach(surface, b->wl_buffer, 0, 0);
-    wl_surface_damage_buffer(surface, 0, 0, w, h);
+    wl_surface_damage_buffer(surface, 0, 0, w * scale, h * scale);
     wl_surface_commit(surface);
 }
 
 static void render_all(void) {
     if (preview) {
-        if (pv_configured) render_surface(pv_surface, pv_w, pv_h, &pv_frame_cb);
+        if (pv_configured) render_surface(pv_surface, pv_w, pv_h, 1, &pv_frame_cb);
         return;
     }
     for (struct g_output *o = outputs; o; o = o->next)
-        if (o->configured) render_surface(o->surface, (int)o->width, (int)o->height, &o->frame_cb);
+        if (o->configured) render_surface(o->surface, (int)o->width, (int)o->height, o->scale, &o->frame_cb);
 }
 
 /* ── keyboard (debug chord) ─────────────────────────────────────────────── */
@@ -277,7 +285,7 @@ static void layer_configure(void *data, struct zwlr_layer_surface_v1 *ls,
     o->width = w; o->height = h; o->configured = true;
     zwlr_layer_surface_v1_ack_configure(ls, serial);
     if (o->frame_cb) { wl_callback_destroy(o->frame_cb); o->frame_cb = NULL; }
-    render_surface(o->surface, (int)w, (int)h, &o->frame_cb);
+    render_surface(o->surface, (int)w, (int)h, o->scale, &o->frame_cb);
 }
 static void layer_closed(void *data, struct zwlr_layer_surface_v1 *ls) { (void)data; (void)ls; running = false; }
 static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
@@ -306,7 +314,7 @@ static void xdg_surface_configure(void *data, struct xdg_surface *xs, uint32_t s
     xdg_surface_ack_configure(xs, serial);
     pv_configured = true;
     if (pv_frame_cb) { wl_callback_destroy(pv_frame_cb); pv_frame_cb = NULL; }
-    render_surface(pv_surface, pv_w, pv_h, &pv_frame_cb);
+    render_surface(pv_surface, pv_w, pv_h, 1, &pv_frame_cb);
 }
 static const struct xdg_surface_listener xdg_surface_listener = { .configure = xdg_surface_configure };
 
@@ -333,6 +341,26 @@ static void create_preview_window(void) {
     wl_surface_commit(pv_surface);
 }
 
+static void output_geometry(void *data, struct wl_output *out, int32_t x, int32_t y,
+                            int32_t pw, int32_t ph, int32_t subpixel, const char *make,
+                            const char *model, int32_t transform) {
+    (void)data; (void)out; (void)x; (void)y; (void)pw; (void)ph;
+    (void)subpixel; (void)make; (void)model; (void)transform;
+}
+static void output_mode(void *data, struct wl_output *out, uint32_t flags,
+                        int32_t w, int32_t h, int32_t refresh) {
+    (void)data; (void)out; (void)flags; (void)w; (void)h; (void)refresh;
+}
+static void output_done(void *data, struct wl_output *out) { (void)data; (void)out; }
+static void output_scale(void *data, struct wl_output *out, int32_t factor) {
+    (void)out;
+    struct g_output *o = data;
+    o->scale = factor > 0 ? factor : 1;
+}
+static const struct wl_output_listener output_listener = {
+    .geometry = output_geometry, .mode = output_mode, .done = output_done, .scale = output_scale,
+};
+
 /* ── registry ───────────────────────────────────────────────────────────── */
 
 static void reg_global(void *data, struct wl_registry *reg, uint32_t name,
@@ -353,7 +381,9 @@ static void reg_global(void *data, struct wl_registry *reg, uint32_t name,
     } else if (strcmp(iface, wl_output_interface.name) == 0) {
         struct g_output *o = calloc(1, sizeof(*o));
         o->name = name;
+        o->scale = 1;
         o->wl_output = wl_registry_bind(reg, name, &wl_output_interface, version < 3 ? version : 3);
+        wl_output_add_listener(o->wl_output, &output_listener, o);
         o->next = outputs;
         outputs = o;
         if (!preview && layer_shell) create_layer_surface(o);
