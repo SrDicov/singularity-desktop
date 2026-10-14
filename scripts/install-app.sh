@@ -61,4 +61,28 @@ done
 echo "Building ${apps[*]} (${#targets[@]} targets)"
 ninja -C "$BUILD" "${targets[@]}"
 
-ONLY_APPS="libsingularity ${apps[*]}" exec bash "$PROJECT_DIR/scripts/deploy-to-host.sh"
+ONLY_APPS="libsingularity ${apps[*]}" bash "$PROJECT_DIR/scripts/deploy-to-host.sh"
+
+on_host() {
+    if [ -n "$container" ] && command -v host-spawn >/dev/null; then
+        host-spawn sh -c "$1"
+    else
+        sh -c "$1"
+    fi
+}
+
+restart_shell=0
+for app in "${apps[@]}"; do
+    case "$app" in
+        singularity-shell|libsingularity) restart_shell=1 ;;
+        singularity-nearby)
+            on_host 'pkill -f "/libexec/singularity-nearby$"' && echo "Restarted the Nearby service" ;;
+        *)
+            if on_host "pgrep -f '/bin/$app( |\$)' >/dev/null"; then
+                echo "$app is open: close and reopen it to use the new version"
+            fi ;;
+    esac
+done
+if [ "$restart_shell" -eq 1 ]; then
+    on_host 'pkill -USR1 -f "/bin/singularity-desktop$"' && echo "Restarted the shell"
+fi
