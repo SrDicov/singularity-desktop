@@ -468,6 +468,12 @@
       <description>Whether to show the wallpaper title and author on the desktop background.</description>
     </key>
 
+    <key name="show-wallpaper-controls" type="b">
+      <default>false</default>
+      <summary>Show wallpaper controls</summary>
+      <description>Whether the top bar shows previous, next, pause and favorite buttons for the wallpaper.</description>
+    </key>
+
     <key name="wallpaper-attribution-position" type="s">
       <choices>
         <choice value="top-left"/>
