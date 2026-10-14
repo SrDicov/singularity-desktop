@@ -50,6 +50,7 @@ $(LABWC_BUILD)/build.ninja:
 	meson setup $(LABWC_BUILD) $(LABWC_DIR) --prefix=/usr --buildtype=release -Dxwayland=enabled --force-fallback-for=wlroots-0.20,scenefx-0.5 -Dscenefx:default_library=static -Dscenefx:examples=false || { rm -rf $(LABWC_BUILD); meson setup $(LABWC_BUILD) $(LABWC_DIR) --prefix=/usr --buildtype=release -Dxwayland=enabled --force-fallback-for=wlroots-0.20,scenefx-0.5 -Dscenefx:default_library=static -Dscenefx:examples=false; }
 
 labwc: $(LABWC_BUILD)/build.ninja
+	grep -qs wlr_scene_blur_set_liquid $(LABWC_DIR)/subprojects/scenefx/include/scenefx/types/wlr_scene.h || { cd $(LABWC_DIR) && meson subprojects purge --confirm scenefx && meson subprojects download scenefx; }
 	meson compile -C $(LABWC_BUILD)
 
 $(LIBINPUT_BUILD)/build.ninja:
