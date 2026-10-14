@@ -43,6 +43,9 @@ MESON_OPTIONS = -Dgestures=$(GESTURES) -Dapps=$(APPS) $(PREFIX_OPTIONS) $(DEVTOO
 
 all: compile
 
+prepare-deps:
+	bash scripts/prepare-deps.sh
+
 $(BUILD_DIR)/build.ninja: | gesture-runtime
 	meson setup $(BUILD_DIR) $(MESON_OPTIONS) || { rm -rf $(BUILD_DIR); meson setup $(BUILD_DIR) $(MESON_OPTIONS); }
 
@@ -172,4 +175,4 @@ install-greeter:
 		sh $(CURDIR)/scripts/run0-tty.sh bash $(CURDIR)/scripts/install-greeter.sh; \
 	fi
 
-.PHONY: all compile sit labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter
+.PHONY: all prepare-deps compile sit labwc libinput gusb libfprint libfprint-test gesture-runtime clean install run reconfigure schemas deploy-host install-session install-greeter

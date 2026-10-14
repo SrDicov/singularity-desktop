@@ -25,15 +25,14 @@ if add_languages('cpp', required: false, native: false)
   add_global_arguments(glibc_compat, language: 'cpp')
   add_global_link_arguments(glibc_compat_link, language: 'cpp')
 endif
-if not find_program('vetro', required: false).found()
-  go = find_program('go', required: false)
-  if not go.found()
-    error('vetro is not installed and Go is missing to build it. Install golang-go or put vetro in PATH.')
-  endif
+go = find_program('go', required: false)
+if go.found()
   vetro_bin = meson.current_build_dir() / 'tools' / 'vetro'
-  message('vetro is not installed, building it from subprojects/vetro')
+  message('Building vetro from subprojects/vetro')
   run_command(go, 'build', '-C', meson.current_source_dir() / 'subprojects' / 'vetro', '-o', vetro_bin, '.', check: true, env: {'GOTMPDIR': meson.current_build_dir()})
   meson.override_find_program('vetro', find_program(vetro_bin))
+elif not find_program('vetro', required: false).found()
+  error('Go is missing to build vetro from subprojects/vetro. Run make prepare-deps or install Go.')
 endif
 
 subdir('data')

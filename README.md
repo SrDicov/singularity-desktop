@@ -7,6 +7,11 @@ sharing the [libsingularity](subprojects/libsingularity) toolkit.
 
 ## Requirements
 
+`make prepare-deps` detects the distribution (Debian/Ubuntu, Fedora, openSUSE, Arch)
+and installs every build and runtime dependency listed below with the system
+package manager; `bash scripts/prepare-deps.sh --dry-run` prints the command
+instead of running it.
+
 - [Meson](https://mesonbuild.com/) >= 0.59
 - [Vala](https://vala.dev/) compiler
 - GTK4 >= 4.6 and gtk4-layer-shell
