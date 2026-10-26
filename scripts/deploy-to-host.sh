@@ -608,9 +608,9 @@ Exec=$OPT_BIN/singularity-portal
 SystemdService=xdg-desktop-portal-singularity.service
 EOF
 
-cat > "$SYS_DBUS/io.github.mirkobrombin.ush.Portal.service" <<EOF
+cat > "$SYS_DBUS/dev.sinty.ush.Portal.service" <<EOF
 [D-BUS Service]
-Name=io.github.mirkobrombin.ush.Portal
+Name=dev.sinty.ush.Portal
 Exec=$OPT_BIN/singularity-portal
 SystemdService=xdg-desktop-portal-singularity.service
 EOF
