@@ -76,18 +76,39 @@ download() {
     fi
 }
 
+ar_member() {
+    total=$(wc -c < "$1")
+    [ "$(head -c 8 "$1")" = "!<arch>" ] || fail "the driver package is not an ar archive"
+    off=8
+    while [ "$off" -lt "$total" ]; do
+        header=$(tail -c +$((off + 1)) "$1" | head -c 60)
+        name=$(printf '%s' "$header" | cut -c1-16 | sed 's/[ /]*$//')
+        size=$(printf '%s' "$header" | cut -c49-58 | tr -d ' ')
+        case "$size" in ''|*[!0-9]*) fail "the driver package is damaged" ;; esac
+        case "$name" in
+        data.tar*)
+            AR_NAME=$name
+            AR_OFFSET=$((off + 61))
+            AR_SIZE=$size
+            return 0
+            ;;
+        esac
+        off=$((off + 60 + size + size % 2))
+    done
+    fail "the driver package has no data archive"
+}
+
 unpack() {
     if command -v dpkg-deb >/dev/null 2>&1; then
         dpkg-deb --fsys-tarfile "$1" > "$2/data.tar"
         return
     fi
-    command -v ar >/dev/null 2>&1 || fail "cannot unpack the driver package (ar is missing)"
-    member=$(ar t "$1" | grep '^data\.tar' | head -n 1)
-    case "$member" in
-    data.tar.zst) ar p "$1" "$member" | zstd -dc > "$2/data.tar" ;;
-    data.tar.xz) ar p "$1" "$member" | xz -dc > "$2/data.tar" ;;
-    data.tar.gz) ar p "$1" "$member" | gzip -dc > "$2/data.tar" ;;
-    data.tar) ar p "$1" "$member" > "$2/data.tar" ;;
+    ar_member "$1"
+    case "$AR_NAME" in
+    data.tar.zst) tail -c +"$AR_OFFSET" "$1" | head -c "$AR_SIZE" | zstd -dc > "$2/data.tar" ;;
+    data.tar.xz) tail -c +"$AR_OFFSET" "$1" | head -c "$AR_SIZE" | xz -dc > "$2/data.tar" ;;
+    data.tar.gz) tail -c +"$AR_OFFSET" "$1" | head -c "$AR_SIZE" | gzip -dc > "$2/data.tar" ;;
+    data.tar) tail -c +"$AR_OFFSET" "$1" | head -c "$AR_SIZE" > "$2/data.tar" ;;
     *) fail "unsupported driver package format" ;;
     esac
 }
@@ -108,7 +129,7 @@ restart_fprintd() {
         udevadm control --reload 2>/dev/null || true
         udevadm trigger --subsystem-match=usb --attr-match=idVendor="${1%%:*}" --attr-match=idProduct="${1##*:}" 2>/dev/null || true
     fi
-    if command -v systemctl >/dev/null 2>&1; then
+    if command -v systemctl >/dev/null 2>&1 && systemctl cat fprintd.service >/dev/null 2>&1; then
         systemctl try-restart fprintd.service 2>/dev/null || true
     else
         stop_fprintd_bus_owner
