@@ -99,10 +99,10 @@
 [submodule "subprojects/singularity-session"]
 	branch = main
 	path = subprojects/singularity-session
-	url = https://github.com/singularityos-lab/singularity-session.git
+	url = https://github.com/SrDicov/singularity-session.git
 [submodule "subprojects/singularity-shell"]
 	path = subprojects/singularity-shell
-	url = https://github.com/singularityos-lab/singularity-shell.git
+	url = https://github.com/SrDicov/singularity-shell.git
 	branch = main
 [submodule "subprojects/singularity-loginui"]
 	path = subprojects/singularity-loginui
