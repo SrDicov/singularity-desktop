@@ -81,7 +81,19 @@ sudo make install-greeter     # or: sudo bash scripts/install-greeter.sh
 On runit this enables the `greetd` service and removes the `agetty-tty1`
 service so greetd owns tty1. Reboot and log in.
 
-## 5. Notes
+## 5. Verification status
+
+Checked in containers from `ghcr.io/void-linux/void-glibc` (and
+`void-musl`), 2026-10-29:
+
+- glibc x86_64: `meson setup -Dapps=all -Dgestures=disabled` and
+  `meson compile` finish with all 4538 targets built.
+- labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
+  path (system wlroots 0.20 + patched scenefx) compile.
+- musl x86_64: dependencies installed and `meson setup -Dapps=all
+  -Dgestures=disabled` succeeds. A full musl compile is still pending.
+
+## 6. Notes
 
 - Date/time, timezone, NTP toggle and hostname work via `pkexec` fallback
   (needs `polkit` + admin auth: root password or a wheel user).
