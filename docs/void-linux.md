@@ -127,6 +127,9 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `gtk4-layer-shell`).
 - Restart the session (logout/login) after every deploy so the new binary
   is picked up.
+- The package depends on `bash`, `dejavu-fonts-ttf` and `xkeyboard-config`:
+  the session launchers are bash scripts, labwc aborts with "no fonts are
+  available" on a font-less system, and the compositor needs the xkb data.
 - Binary packages: the templates live in
   [SrDicov/z-packages](https://github.com/SrDicov/z-packages) and publish to
   [SrDicov/z-repo](https://github.com/SrDicov/z-repo). Install with:

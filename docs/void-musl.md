@@ -46,6 +46,11 @@ The musl runtime path is the same as glibc minus gestures:
 - Gestures: cannot be enabled because the prebuilt blobs are glibc-only.
   Rebuilding the MediaPipe/ONNX runtime for musl is out of scope. Tracked in
   `TODO.md` as an internal follow-up.
+- The vendored `scenefx` headers use `__always_inline`, which musl's headers do
+  not export. The xbps templates apply `scenefx-musl-always-inline.patch` to
+  both the standalone labwc build and the desktop's vendored copy.
+- The session scripts are bash and labwc refuses to start with no fonts, so the
+  package depends on `bash`, `dejavu-fonts-ttf` and `xkeyboard-config`.
 - No prebuilt musl package. Build from source as above.
 - `fprintd` integration with libfprint-TOD is a source build (`make
   install-fprint`); the standard Void `fprintd` package still enumerates
