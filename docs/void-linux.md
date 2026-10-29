@@ -1,46 +1,43 @@
 # Singularity Desktop on Void Linux (glibc)
 
 Void uses runit (no systemd), `xbps`, and `sudo` or `doas` (package
-`opendoas`) instead of `run0`. This guide covers a full install from source.
-`elogind` provides the `org.freedesktop.login1` API, so session tracking,
-suspend and brightness work unchanged. There is no `timedate1`/`hostnamed` on
-Void: date/timezone/hostname settings fall back to `pkexec` helpers (the
-session polkit agent prompts, same UX).
+`opendoas`) instead of `run0`. `elogind` provides the
+`org.freedesktop.login1` API, so session tracking, suspend and brightness work
+unchanged. There is no `timedate1`/`hostnamed` on Void: date/timezone/hostname
+settings fall back to `pkexec` helpers (the session polkit agent prompts, same
+UX).
+
+Supported: **Void glibc, x86_64 only**. Void musl is not supported yet (see
+"musl" below).
 
 ## 1. Dependencies
 
 ```sh
-sudo xbps-install -Su \
-  meson ninja vala pkg-config gettext git curl unzip python3 \
-  glib-devel gobject-introspection sassc scdoc wayland-protocols \
-  gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel gtksourceview5-devel \
-  libpeas2-devel libgee-devel NetworkManager-devel upower-devel \
-  pulseaudio-devel gnome-online-accounts-devel polkit-devel libsoup3-devel \
-  json-glib-devel libdbusmenu-glib-devel at-spi2-core-devel tinysparql-devel \
-  eudev-libudev-devel pam-devel elogind-devel wayland-devel \
-  libxkbcommon-devel cairo-devel pango-devel gdk-pixbuf-devel libxcb-devel \
-  libpng-devel librsvg-devel libsfdo-devel libxml2-devel libsecret-devel \
-  poppler-glib-devel gst-plugins-base1-devel gst-plugins-good1-devel \
-  pipewire-devel libdisplay-info-devel libliftoff-devel libdrm-devel \
-  MesaLib-devel libinput-devel libseat-devel xorg-server-xwayland \
-  dbus elogind greetd seatd xdg-desktop-portal xdg-user-dirs accountsservice \
-  desktop-file-utils hicolor-icon-theme openntpd
+sudo make prepare-deps
 ```
 
-`sudo` or `opendoas` (both work), plus `qt6-base` if you want Qt apps to
-follow the theme. `appmenu-gtk-module` is not packaged: first-party apps are
-unaffected, third-party GTK global menus just won't appear.
+`prepare-deps.sh` now has a Void case; its package list was checked against a
+Void glibc x86_64 repo index. Runtime extras: `dbus elogind greetd seatd
+xdg-desktop-portal xdg-user-dirs desktop-file-utils hicolor-icon-theme
+openntpd`, plus `qt6-base` if you want Qt apps to follow the theme.
+`appmenu-gtk-module` is not packaged in Void: first-party apps are unaffected,
+third-party GTK global menus just won't appear.
 
 ## 2. Build
 
 ```sh
 git clone --recurse-submodules https://github.com/singularityos-lab/singularity-desktop
 cd singularity-desktop
-make compile
+make
 ```
 
-This bootstraps the gesture runtime (downloads MediaPipe/ONNX blobs,
-glibc x86_64), builds the labwc fork, then the desktop.
+`make` builds the labwc fork, libinput, libfprint and (when the submodule is
+present) sit before the desktop. Gestures are enabled by default and bootstrap
+the MediaPipe/ONNX blobs (glibc x86_64). To build without them:
+
+```sh
+make GESTURES=disabled          # or: meson setup build -Dgestures=disabled
+```
 
 ## 3. Deploy (sudo or doas, both fully supported)
 
@@ -90,6 +87,13 @@ service so greetd owns tty1. Reboot and log in.
   (needs `polkit` + admin auth: root password or a wheel user).
 - NTP toggle manages the runit service (`/etc/sv/ntpd` from `openntpd`, or
   `chronyd`).
+- Fingerprint: `scripts/install-fprint.sh` installs the libfprint-TOD
+  libraries, but the fprintd wiring is a systemd drop-in. On Void it skips the
+  drop-in and prints the `LD_LIBRARY_PATH` to add to `/etc/sv/fprintd/run`.
+- musl: `-Dgestures=disabled` is supported, but the rest of the tree has not
+  been built on musl yet. This is the remaining blocker for a musl template.
 - Restart the session (logout/login) after every deploy so the new binary
   is picked up.
-- Binary packages: see `packaging/xbps/` (draft templates for void-packages).
+- Binary packages: see `packaging/xbps/` (draft templates for void-packages;
+  makedepends verified against the Void repo index, full xbps-src build
+  pending).
