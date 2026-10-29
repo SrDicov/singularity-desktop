@@ -11,7 +11,7 @@ archs="x86_64"
 build_style=meson
 configure_args="--prefix=/usr -Dlibdir=lib -Dinstaller=false"
 hostmakedepends="meson ninja vala pkg-config gettext glib-devel
- gobject-introspection sassc scdoc wayland-protocols git python3 curl unzip go"
+ gobject-introspection sassc scdoc wayland-protocols git python3 curl unzip go bash"
 makedepends="gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel
  gtksourceview5-devel libpeas2-devel libgee-devel NetworkManager-devel
  upower-devel pulseaudio-devel gnome-online-accounts-devel polkit-devel
@@ -34,7 +34,7 @@ makedepends="gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel
  libwacom-devel libsodium-devel libzbar-devel libgcrypt-devel nettle-devel
  freerdp3-devel sane-devel SDL2-devel fuse3-devel liblzma-devel mtdev-devel
  sqlite-devel libzstd-devel zlib-devel gnutls-devel glu-devel
- libwebkitgtk60-devel hwids iso-codes"
+ libwebkitgtk60-devel hwids iso-codes enchant2-devel libgphoto2-devel"
 depends="dbus elogind greetd xdg-desktop-portal xdg-user-dirs
  hicolor-icon-theme desktop-file-utils gtk4-layer-shell libpeas2 tinysparql
  vte3-gtk4 gtksourceview5 python3 libdecor"

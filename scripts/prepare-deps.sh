@@ -73,7 +73,7 @@ ARCH=(
 
 VOID=(
     cmake meson ninja vala pkg-config gettext git curl unzip python3 sassc scdoc
-    gcc make
+    gcc make bash
     gobject-introspection wayland-protocols hwids iso-codes
     glib-devel gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel gtksourceview5-devel
     libpeas2-devel libgee-devel NetworkManager-devel upower-devel pulseaudio-devel
@@ -94,6 +94,7 @@ VOID=(
     libjpeg-turbo-devel tiff-devel libwebp-devel vulkan-loader-devel Vulkan-Headers
     shaderc go cargo libevdev-devel libfido2-devel libwacom-devel libsodium-devel
     libzbar-devel libgcrypt-devel nettle-devel freerdp3-devel sane-devel SDL2-devel
+    enchant2-devel libgphoto2-devel
     fuse3-devel liblzma-devel mtdev-devel sqlite-devel libzstd-devel zlib-devel
     gnutls-devel glu-devel libwebkitgtk60-devel
 )
@@ -103,7 +104,9 @@ DRY_RUN=0
 
 SUDO=()
 if [ "$(id -u)" -ne 0 ]; then
-    if command -v sudo >/dev/null; then SUDO=(sudo); else SUDO=(run0); fi
+    if command -v sudo >/dev/null; then SUDO=(sudo)
+    elif command -v doas >/dev/null; then SUDO=(doas)
+    else SUDO=(run0); fi
 fi
 
 run() {
