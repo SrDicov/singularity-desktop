@@ -1,0 +1,28 @@
+# Template file for 'labwc-singularity'
+# DRAFT - the Singularity labwc fork (branch 'singularity'). Replaces stock
+# labwc: the session launches $PREFIX/bin/labwc with Singularity patches.
+pkgname=labwc-singularity
+version=0.20.2
+revision=1
+_commit="singularity"
+build_style=meson
+configure_args="--prefix=/usr --libdir=lib --buildtype=release
+ -Dxwayland=enabled --force-fallback-for=wlroots-0.20"
+hostmakedepends="meson ninja pkg-config gettext scdoc wayland-devel wayland-protocols git"
+makedepends="cairo-devel glib-devel libpng-devel librsvg-devel libsfdo-devel
+ libxml2-devel pango-devel wlroots0.20-devel xorg-server-xwayland
+ libdisplay-info-devel libliftoff-devel libdrm-devel libinput-devel
+ libseat-devel libxkbcommon-devel eudev-libudev-devel"
+conflicts="labwc>=0"
+provides="labwc-${version}_${revision}"
+short_desc="Singularity fork of the labwc Wayland compositor"
+maintainer="singularityos-lab"
+license="GPL-2.0-or-later"
+homepage="https://github.com/singularityos-lab/singularity-desktop"
+repository="https://github.com/singularityos-lab/labwc.git"
+
+do_fetch() {
+	msg_normal "Cloning ${repository} (branch ${_commit}) with submodules...\n"
+	git clone --recurse-submodules --branch "${_commit}" \
+		"${repository}" "${pkgname}-${version}"
+}

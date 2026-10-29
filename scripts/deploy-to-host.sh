@@ -1,5 +1,7 @@
 #!/bin/bash
-# Deploy Singularity Desktop to /opt/local. Run via: make install
+# Deploy Singularity Desktop. Run via: make install
+# Target prefix defaults to /opt/local; packagers installing to /usr set
+# SINGULARITY_PREFIX=/usr (see packaging/xbps).
 
 set -e
 
@@ -34,30 +36,36 @@ if [ -n "$TEST_ROOT" ]; then
     mkdir -p "$ORIG_HOME"
 fi
 
+# Re-escalation knobs: sudo/doas and run0 all sanitize the environment, so
+# pass every value explicitly through env. `doas VAR=x cmd` does not work.
+ESCALATE_ENV=(env
+    ORIG_HOME="$HOME"
+    ORIG_USER="$USER"
+    APPS="${APPS:-all}"
+    DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}"
+    SIT_STAGE="${SIT_STAGE:-}"
+    ONLY_APPS="${ONLY_APPS:-}"
+    SINGULARITY_PREFIX="${SINGULARITY_PREFIX:-}")
+
 if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
     if [ -n "$container" ]; then
         exec host-spawn sh "$(dirname "$(readlink -f "$0")")/run0-tty.sh" \
-            --setenv=ORIG_HOME="$HOME" \
-            --setenv=ORIG_USER="$USER" \
-            --setenv=APPS="${APPS:-all}" \
-            --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
-            --setenv=SIT_STAGE="${SIT_STAGE:-}" \
-            --setenv=ONLY_APPS="${ONLY_APPS:-}" \
-            --setenv=container=host-spawned \
-            bash "$0" "$@"
+            "${ESCALATE_ENV[@]}" bash "$0" "$@"
+    elif command -v run0 >/dev/null; then
+        # run0 only exists on systemd hosts; Void uses sudo or doas.
+        exec run0 "${ESCALATE_ENV[@]}" bash "$0" "$@"
+    elif command -v sudo >/dev/null; then
+        exec sudo "${ESCALATE_ENV[@]}" bash "$0" "$@"
+    elif command -v doas >/dev/null; then
+        exec doas "${ESCALATE_ENV[@]}" bash "$0" "$@"
     else
-        exec sh "$(dirname "$(readlink -f "$0")")/run0-tty.sh" \
-            --setenv=ORIG_HOME="$HOME" \
-            --setenv=ORIG_USER="$USER" \
-            --setenv=APPS="${APPS:-all}" \
-            --setenv=DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}" \
-            --setenv=SIT_STAGE="${SIT_STAGE:-}" \
-            --setenv=ONLY_APPS="${ONLY_APPS:-}" \
-            bash "$0" "$@"
+        echo "ERROR: need root (run as root, or install run0/sudo/doas)." >&2
+        exit 1
     fi
 fi
 
-REAL_USER="${ORIG_USER:-${SUDO_USER:-$USER}}"
+# sudo sets SUDO_USER, doas sets DOAS_USER, run0 gets ORIG_USER above.
+REAL_USER="${ORIG_USER:-${SUDO_USER:-${DOAS_USER:-$USER}}}"
 REAL_HOME="${ORIG_HOME:-$(getent passwd "$REAL_USER" | cut -d: -f6)}"
 if [ -z "$REAL_HOME" ] || [ "$REAL_HOME" = "/" ]; then
     echo "ERROR: cannot determine the calling user's HOME (REAL_USER='$REAL_USER')" >&2
@@ -89,12 +97,20 @@ run_as_user() {
         DBUS_SESSION_BUS_ADDRESS="unix:path=$REAL_XDG_RUNTIME_DIR/bus")
     if command -v runuser >/dev/null; then
         runuser -u "$REAL_USER" -- "${env_prefix[@]}" "$@"
-    else
+    elif command -v sudo >/dev/null; then
         sudo -u "$REAL_USER" "${env_prefix[@]}" "$@"
+    else
+        # doas-only systems (no sudo): su is in util-linux everywhere.
+        su -s /bin/sh "$REAL_USER" -c "$(printf '%q ' "${env_prefix[@]}" "$@")"
     fi
 }
 
-PREFIX="${DEPLOY_PREFIX:-/opt/local}"
+# True on systemd hosts (units, systemctl, GDM drop-ins apply).
+has_systemd() {
+    [ -d /run/systemd/system ] && command -v systemctl >/dev/null
+}
+
+PREFIX="${SINGULARITY_PREFIX:-${DEPLOY_PREFIX:-/opt/local}}"
 OPT_BIN="$PREFIX/bin"
 OPT_LIB="$PREFIX/lib"
 OPT_SHARE="$PREFIX/share"
@@ -321,6 +337,7 @@ install_build_files
 LABWC_BIN=""
 for p in "$PROJECT_DIR/subprojects/labwc/build/labwc" \
          "$PROJECT_DIR/subprojects/labwc/build-user/labwc" \
+         "$OPT_BIN/labwc" \
          "/opt/local/bin/labwc" \
          "/usr/local/bin/labwc" \
          "/usr/bin/labwc"; do
@@ -623,7 +640,7 @@ EOF
 
 sed "s|@PREFIX@|$PREFIX|g" > "$OPT_BIN/singularity-portal" <<'SPORTAL'
 #!/bin/bash
-export WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}
+export WAYLAND_DISPLAY=\${WAYLAND_DISPLAY:-wayland-0}
 export GDK_BACKEND=wayland
 export GSK_RENDERER=gl
 export GTK_A11Y=none
@@ -632,11 +649,11 @@ export LD_LIBRARY_PATH="@PREFIX@/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export GSETTINGS_SCHEMA_DIR="@PREFIX@/share/glib-2.0/schemas${GSETTINGS_SCHEMA_DIR:+:$GSETTINGS_SCHEMA_DIR}"
 export XDG_DATA_DIRS="@PREFIX@/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 # Preload gtk4-layer-shell before libwayland-client or layer-shell init fails here.
-for ls in /usr/lib/x86_64-linux-gnu/libgtk4-layer-shell.so.0 \
-          /usr/lib64/libgtk4-layer-shell.so.0 \
+for ls in /usr/lib/x86_64-linux-gnu/libgtk4-layer-shell.so.0 \\
+          /usr/lib64/libgtk4-layer-shell.so.0 \\
           /usr/lib/libgtk4-layer-shell.so.0; do
-    if [ -e "$ls" ]; then
-        export LD_PRELOAD="$ls${LD_PRELOAD:+:$LD_PRELOAD}"
+    if [ -e "\$ls" ]; then
+        export LD_PRELOAD="\$ls\${LD_PRELOAD:+:\$LD_PRELOAD}"
         break
     fi
 done
@@ -674,7 +691,9 @@ else
     mkdir -p "$OPT_SHARE/wayland-sessions"
     printf '%s\n' "$SESSION_ENTRY" > "$OPT_SHARE/wayland-sessions/singularity.desktop"
     echo "  $OPT_SHARE/wayland-sessions/singularity.desktop (/usr is read-only)"
-    if mkdir -p "$SYSROOT/etc/systemd/system/gdm.service.d" 2>/dev/null; then
+    # GDM environment override: systemd hosts only. Elsewhere (Void/runit) the
+    # login manager is configured separately (greetd, see install-greeter.sh).
+    if has_systemd && mkdir -p "$SYSROOT/etc/systemd/system/gdm.service.d" 2>/dev/null; then
         printf '%s\n' "[Service]" \
             "Environment=\"XDG_DATA_DIRS=/var/lib/flatpak/exports/share:$OPT_SHARE:/usr/local/share:/usr/share\"" \
             > "$SYSROOT/etc/systemd/system/gdm.service.d/singularity-session.conf"
@@ -718,6 +737,11 @@ run_as_user mkdir -p "$PORTALS_CONF_DIR"
 } | sed '/^$/d' > "$PORTALS_CONF_DIR/singularity-portals.conf"
 host_only chown "$REAL_USER:$REAL_USER" "$PORTALS_CONF_DIR/singularity-portals.conf"
 
+# systemd user units: only meaningful on systemd hosts. Elsewhere (Void/runit)
+# the portal and keyring start via D-Bus session activation (service files in
+# $OPT_DBUS, found through XDG_DATA_DIRS) and the polkit agent is started by
+# singularity-desktop-session itself.
+if has_systemd; then
 ETC_USER_DIR="$SYSROOT/etc/systemd/user"
 mkdir -p "$ETC_USER_DIR"
 
@@ -730,7 +754,9 @@ rm -f "$REAL_HOME/.config/systemd/user/singularity-polkit-agent.service"
 rm -f "$REAL_HOME/.config/systemd/user/singularity-keyring.service" \
       "$REAL_HOME/.config/systemd/user/xdg-desktop-portal-singularity.service"
 rm -f "$ETC_USER_DIR/singularity-keyring.service"
+fi
 
+# Per-user secrets activation: needed on every init (D-Bus activation, not systemd).
 USER_DBUS_DIR="$REAL_HOME/.local/share/dbus-1/services"
 run_as_user mkdir -p "$USER_DBUS_DIR"
 run_as_user cp "$OPT_DBUS/org.freedesktop.secrets.service" \
@@ -750,6 +776,7 @@ if [ -z "$TEST_ROOT" ]; then
     fi
 fi
 
+if has_systemd; then
 cat > "$ETC_USER_DIR/xdg-desktop-portal-singularity.service" <<EOF
 [Unit]
 Description=Singularity XDG Desktop Portal
@@ -788,6 +815,11 @@ host_only gdbus call --system --dest org.freedesktop.DBus --object-path /org/fre
     --method org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1 || true
 host_only run_as_user systemctl --user daemon-reload 2>/dev/null || true
 host_only run_as_user systemctl --user restart xdg-desktop-portal.service 2>/dev/null || true
+else
+    echo "Non-systemd host detected: skipping systemd user units."
+    echo "  Portal/keyring activate over D-Bus; enable runit services:"
+    echo "    ln -s /etc/sv/dbus /var/service/ && ln -s /etc/sv/elogind /var/service/"
+fi
 
 LEGACY="$REAL_HOME/.local/singularity"
 if [ -d "$LEGACY" ]; then

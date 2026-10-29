@@ -1,0 +1,60 @@
+# Template file for 'singularity-desktop'
+# DRAFT - not yet build-tested on Void. Build with:
+#   ./xbps-src pkg singularity-desktop
+# from a void-packages checkout with this directory linked into srcpkgs/.
+pkgname=singularity-desktop
+version=0.1.0
+revision=1
+# Pin the exact upstream commit (update to move forward):
+_commit="master"
+archs="x86_64*"
+build_style=meson
+configure_args="--prefix=/usr -Dinstaller=false"
+hostmakedepends="meson ninja vala pkg-config gettext glib-devel
+ gobject-introspection sassc scdoc wayland-protocols git python3 curl unzip"
+makedepends="gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel
+ gtksourceview5-devel libpeas2-devel libgee-devel NetworkManager-devel
+ upower-devel pulseaudio-devel gnome-online-accounts-devel polkit-devel
+ libsoup3-devel json-glib-devel libdbusmenu-glib-devel at-spi2-core-devel
+ tinysparql-devel eudev-libudev-devel pam-devel elogind-devel wayland-devel
+ libxkbcommon-devel cairo-devel pango-devel gdk-pixbuf-devel libxcb-devel
+ libpng-devel librsvg-devel libsfdo-devel libxml2-devel libsecret-devel
+ poppler-glib-devel gst-plugins-base1-devel pipewire-devel libdisplay-info-devel
+ libliftoff-devel libdrm-devel MesaLib-devel libinput-devel libseat-devel
+ xorg-server-xwayland"
+depends="dbus elogind greetd xdg-desktop-portal xdg-user-dirs
+ hicolor-icon-theme desktop-file-utils gtk4-layer-shell libpeas2 tinysparql
+ vte3-gtk4 gtksourceview5 python3"
+short_desc="Singularity Desktop Environment (Wayland, GTK4)"
+maintainer="singularityos-lab"
+license="GPL-3.0-only"
+homepage="https://github.com/singularityos-lab/singularity-desktop"
+repository="https://github.com/singularityos-lab/singularity-desktop.git"
+
+do_fetch() {
+	msg_normal "Cloning ${repository} (${_commit}) with submodules...\n"
+	git clone --recurse-submodules "${repository}" "${pkgname}-${version}"
+	(cd "${pkgname}-${version}" && git checkout "${_commit}" \
+		&& git submodule update --init --recursive)
+}
+
+post_fetch() {
+	# Gesture runtime blobs (glibc x86_64) must exist before meson setup.
+	msg_normal "Bootstrapping gesture runtime...\n"
+	(cd "${pkgname}-${version}" \
+		&& PYTHON=python3 bash subprojects/singularity-gestures/scripts/bootstrap-runtime.sh)
+}
+
+do_build() {
+	meson setup build --prefix=/usr --libdir=lib \
+		--buildtype=release -Dinstaller=false
+	meson compile -C build
+}
+
+do_install() {
+	DESTDIR="${DESTDIR}" meson install -C build
+	glib-compile-schemas "${DESTDIR}"/usr/share/glib-2.0/schemas
+	# Host-integration scripts referenced by the INSTALL message.
+	vinstall scripts/deploy-to-host.sh 755 usr/share/doc/singularity-desktop
+	vinstall scripts/install-greeter.sh 755 usr/share/doc/singularity-desktop
+}
