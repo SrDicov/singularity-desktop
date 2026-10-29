@@ -20,7 +20,8 @@ sudo make prepare-deps
 `prepare-deps.sh` now has a Void case; its package list was checked against a
 Void glibc x86_64 repo index. Runtime extras: `dbus elogind greetd seatd
 xdg-desktop-portal xdg-user-dirs desktop-file-utils hicolor-icon-theme
-openntpd`, plus `qt6-base` if you want Qt apps to follow the theme.
+openntpd NetworkManager upower pipewire wireplumber`, plus `qt6-base` if you
+want Qt apps to follow the theme. `NetworkManager` is capitalised in xbps.
 `appmenu-gtk-module` is not packaged in Void: first-party apps are unaffected,
 third-party GTK global menus just won't appear.
 
@@ -87,6 +88,11 @@ service so greetd owns tty1. Reboot and log in.
 Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 `void-musl`), 2026-10-29:
 
+- **Real package install (glibc)**: a clean `void-glibc` container with the
+  z-repo key and repository configured ran `xbps-install -S` and
+  `xbps-install -y singularity-desktop`; both packages installed with
+  `EXIT 0` and the session binaries landed in `/usr/bin`
+  (`singularity-desktop`, `singularity-labwc-session`, `labwc`, the apps).
 - glibc x86_64: `meson setup -Dapps=all -Dgestures=disabled` and
   `meson compile` finish with all 4538 targets built.
 - labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
@@ -112,6 +118,13 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `libexecinfo-devel` is needed (the crash handler uses `backtrace`); the
   glibc repo does not ship it and `prepare-deps` skips it there. The gesture
   runtime blobs and the published xbps package stay glibc-only.
+- Portals on runit: there is no `systemd --user` to start the backend unit, so
+  the package installs session-bus activation files for
+  `org.freedesktop.impl.portal.desktop.singularity` and `dev.sinty.ush.Portal`.
+  `xdg-desktop-portal` activates the backend on first use. A source deploy to
+  `/opt/local` keeps using the `singularity-portal` wrapper from
+  `deploy-to-host.sh` (it sets `LD_LIBRARY_PATH` and preloads
+  `gtk4-layer-shell`).
 - Restart the session (logout/login) after every deploy so the new binary
   is picked up.
 - Binary packages: the templates live in
