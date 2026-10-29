@@ -23,25 +23,29 @@ install_data(
 
 # Session-bus activation of the portal backend. On runit hosts there is no
 # systemd --user to start the unit, so xdg-desktop-portal must be able to
-# activate the backend over D-Bus on its own.
-_portal_libexecdir = get_option('libexecdir')
-if not _portal_libexecdir.startswith('/')
-  _portal_libexecdir = get_option('prefix') / _portal_libexecdir
+# activate the backend over D-Bus on its own. Only the /usr package gets these
+# files: a source deploy to /opt/local must keep using the deploy script's
+# wrapper (it sets LD_LIBRARY_PATH and preloads gtk4-layer-shell).
+if get_option('prefix') == '/usr'
+  _portal_libexecdir = get_option('libexecdir')
+  if not _portal_libexecdir.startswith('/')
+    _portal_libexecdir = get_option('prefix') / _portal_libexecdir
+  endif
+  _dbus_portal_conf = configuration_data()
+  _dbus_portal_conf.set('libexecdir', _portal_libexecdir)
+  foreach _name : [
+      'org.freedesktop.impl.portal.desktop.singularity',
+      'dev.sinty.ush.Portal',
+    ]
+    configure_file(
+      input: 'dbus-1' / (_name + '.service.in'),
+      output: _name + '.service',
+      configuration: _dbus_portal_conf,
+      install: true,
+      install_dir: get_option('datadir') / 'dbus-1' / 'services',
+    )
+  endforeach
 endif
-_dbus_portal_conf = configuration_data()
-_dbus_portal_conf.set('libexecdir', _portal_libexecdir)
-foreach _name : [
-    'org.freedesktop.impl.portal.desktop.singularity',
-    'dev.sinty.ush.Portal',
-  ]
-  configure_file(
-    input: 'dbus-1' / (_name + '.service.in'),
-    output: _name + '.service',
-    configuration: _dbus_portal_conf,
-    install: true,
-    install_dir: get_option('datadir') / 'dbus-1' / 'services',
-  )
-endforeach
 install_data(
   'udev/60-singularity-ddc.rules',
   install_dir: get_option('prefix') / 'lib' / 'udev' / 'rules.d'
