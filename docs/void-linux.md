@@ -44,9 +44,25 @@ glibc x86_64), builds the labwc fork, then the desktop.
 
 ## 3. Deploy (sudo or doas, both fully supported)
 
+From a source checkout:
+
 ```sh
 make install            # sudo preferred, doas fallback, run0 only on systemd hosts
 ```
+
+From the `singularity-desktop` xbps package (scripts in doc dir, no build
+tree — integration-only mode is automatic, no env vars needed):
+
+```sh
+sudo bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
+# doas-only systems:
+doas bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
+```
+
+NOTE: `doas VAR=x cmd` does not work (doas rejects the assignment, and
+`sudo`'s `env_reset` strips it too). The scripts re-pass their own knobs
+across re-escalation themselves — always invoke them plainly. Only if you
+ever need an explicit prefix with doas, use `doas env VAR=x ...`.
 
 The script detects non-systemd hosts automatically: it skips systemd units
 (the portal/keyring activate over D-Bus; the polkit agent is started by the

@@ -45,7 +45,8 @@ ESCALATE_ENV=(env
     DEPLOY_PREFIX="${DEPLOY_PREFIX:-/opt/local}"
     SIT_STAGE="${SIT_STAGE:-}"
     ONLY_APPS="${ONLY_APPS:-}"
-    SINGULARITY_PREFIX="${SINGULARITY_PREFIX:-}")
+    SINGULARITY_PREFIX="${SINGULARITY_PREFIX:-}"
+    SINGULARITY_INTEGRATION_ONLY="${SINGULARITY_INTEGRATION_ONLY:-}")
 
 if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
     if [ -n "$container" ]; then
@@ -111,6 +112,20 @@ has_systemd() {
 }
 
 PREFIX="${SINGULARITY_PREFIX:-${DEPLOY_PREFIX:-/opt/local}}"
+BUILD="$PROJECT_DIR/build"
+# Package installs (scripts run from /usr/share/doc, no build tree): only
+# host integration is possible — binaries already live at $PREFIX.
+# Auto-detects a /usr install; SINGULARITY_PREFIX / DEPLOY_PREFIX override it.
+if [ -z "${SINGULARITY_PREFIX:-}" ] && [ -z "${DEPLOY_PREFIX:-}" ] \
+    && [ ! -d "$BUILD" ] && [ -x /usr/bin/singularity-desktop ]; then
+    PREFIX=/usr
+fi
+if [ ! -d "$BUILD" ] && [ -x "$PREFIX/bin/singularity-desktop" ]; then
+    INTEGRATION_ONLY="${SINGULARITY_INTEGRATION_ONLY:-1}"
+    echo "No build tree at $BUILD: integration-only mode for $PREFIX."
+else
+    INTEGRATION_ONLY="${SINGULARITY_INTEGRATION_ONLY:-0}"
+fi
 OPT_BIN="$PREFIX/bin"
 OPT_LIB="$PREFIX/lib"
 OPT_SHARE="$PREFIX/share"
@@ -130,7 +145,6 @@ OPT_FILES_ACTIONS="$OPT_SING/files-actions"
 OPT_PORTAL="$OPT_SHARE/xdg-desktop-portal/portals"
 OPT_DBUS="$OPT_SHARE/dbus-1/services"
 OPT_BACKGROUNDS="$OPT_SHARE/backgrounds/singularity"
-BUILD="$PROJECT_DIR/build"
 
 install_build_files() {
     local extra=()
@@ -262,6 +276,8 @@ echo "Deploying Singularity to $PREFIX ..."
 take_snapshot
 
 echo "Installing binaries..."
+# Integration-only: binaries already live in $OPT_BIN, skip the build scan.
+if [ "$INTEGRATION_ONLY" = "0" ]; then
 for bin in singularity-desktop \
            singularity-region-picker singularity-screenshot singularity-recorder \
            singularity-hand-control singularity-gesture-lab \
@@ -347,6 +363,7 @@ if [ -n "$LABWC_BIN" ] && [ "$LABWC_BIN" != "$OPT_BIN/labwc" ]; then
     acopy "$LABWC_BIN" "$OPT_BIN/labwc"
     echo "  labwc (from $LABWC_BIN)"
 fi
+fi # INTEGRATION_ONLY binaries
 
 echo "Installing shared libraries..."
 LIBINPUT_LIB=$(find "$PROJECT_DIR/subprojects/libinput/build" -maxdepth 1 -type f -name "libinput.so.10.*" 2>/dev/null | head -1)
@@ -355,6 +372,8 @@ if [ -n "$LIBINPUT_LIB" ]; then
     ln -sf "$(basename "$LIBINPUT_LIB")" "$OPT_LIB/libinput.so.10"
     echo "  $(basename "$LIBINPUT_LIB")"
 fi
+# Integration-only (package install): libraries are already in $OPT_LIB.
+if [ "$INTEGRATION_ONLY" = "0" ]; then
 acopy "$BUILD/subprojects/libsingularity/libsingularity.so.0.1.0" \
       "$OPT_LIB/libsingularity.so.0.1.0"
 ln -sf libsingularity.so.0.1.0 "$OPT_LIB/libsingularity.so.0"
@@ -420,10 +439,13 @@ if [ -d "$BUILD/extra-libs" ]; then
         [ -f "$lib" ] && acopy "$lib" "$OPT_LIB/$(basename "$lib")"
     done
 fi
+fi # INTEGRATION_ONLY libs
 
 bash "$PROJECT_DIR/scripts/install-fprint.sh" --prefix "$PREFIX" ${TEST_ROOT:+--dry-run} || echo "  WARNING: the fingerprint driver integration was not installed" >&2
 
 echo "Installing plugins..."
+# Unmatched globs would create a literal '*' dir without a build tree.
+if [ "$INTEGRATION_ONLY" = "0" ]; then
 for plugin_dir in "$BUILD/subprojects/singularity-plugins"/*/; do
     plugin_name="$(basename "$plugin_dir")"
     dest="$OPT_PLUGINS/$plugin_name"
@@ -436,6 +458,7 @@ for plugin_dir in "$BUILD/subprojects/singularity-plugins"/*/; do
     done
     echo "  $plugin_name"
 done
+fi # INTEGRATION_ONLY plugins
 
 
 echo "Installing overview widgets..."
@@ -500,8 +523,8 @@ FCEOF
 fi
 
 echo "Installing GIR / typelibs..."
-GIR_SRC="$(find "$BUILD" -maxdepth 4 \( -name 'Singularity-1.0.gir' -o -name 'LibSingularity-1.0.gir' \) | head -n 1)"
-TYPELIB_SRC="$(find "$BUILD" -maxdepth 4 \( -name 'Singularity-1.0.typelib' -o -name 'LibSingularity-1.0.typelib' \) | head -n 1)"
+GIR_SRC="$(find "$BUILD" -maxdepth 4 \( -name 'Singularity-1.0.gir' -o -name 'LibSingularity-1.0.gir' \) 2>/dev/null | head -n 1)"
+TYPELIB_SRC="$(find "$BUILD" -maxdepth 4 \( -name 'Singularity-1.0.typelib' -o -name 'LibSingularity-1.0.typelib' \) 2>/dev/null | head -n 1)"
 [ -n "$GIR_SRC" ] && cp "$GIR_SRC" "$OPT_GIR/"
 if [ -n "$TYPELIB_SRC" ]; then
     cp "$TYPELIB_SRC" "$OPT_TYPELIB/"
@@ -510,6 +533,8 @@ elif [ -n "$GIR_SRC" ] && command -v g-ir-compiler >/dev/null; then
 fi
 
 echo "Installing .desktop files..."
+# Integration-only: .desktop files came with the package; only refresh the db.
+if [ "$INTEGRATION_ONLY" = "0" ]; then
 [ -f "$PROJECT_DIR/subprojects/singularity-leafs/data/dev.sinty.leafs.desktop" ] || {
     echo "ERROR: subprojects/singularity-leafs is missing dev.sinty.leafs.desktop. Run: git submodule update --init --recursive" >&2
     exit 1
@@ -522,6 +547,7 @@ find "$PROJECT_DIR" -path "$BUILD" -prune -o -name "*.desktop" -type f -print | 
     fi
     sed -E "s|^Exec=([a-z].*)$|Exec=$OPT_BIN/\1|" "$desktop" > "$OPT_APPS/$(basename "$desktop")"
 done
+fi
 update-desktop-database "$OPT_APPS" 2>/dev/null || true
 
 echo "Installing icons..."
@@ -668,6 +694,7 @@ chmod +x "$OPT_BIN/singularity-portal"
 
 echo "Checking session scripts..."
 SESSION_SRC="$PROJECT_DIR/subprojects/singularity-session"
+if [ "$INTEGRATION_ONLY" = "0" ]; then
 for s in singularity-desktop-session singularity-labwc-session; do
     if [ ! -x "$OPT_BIN/$s" ]; then
         echo "ERROR: $OPT_BIN/$s was not installed from the build; run make compile first" >&2
@@ -675,6 +702,7 @@ for s in singularity-desktop-session singularity-labwc-session; do
     fi
     echo "  $s"
 done
+fi
 
 echo "Registering the desktop session..."
 SESSION_ENTRY="[Desktop Entry]
@@ -711,15 +739,23 @@ echo "  external display brightness (DDC/CI) access"
 
 echo "Installing per-user config for $REAL_USER..."
 
+# Session data ships in the source tree, or (package installs) in $OPT_SHARE.
+SESSION_DATA="$SESSION_SRC/config/labwc"
+MIGRATE_SCRIPT="$SESSION_SRC/scripts/migrate-labwc-rc.py"
+if [ "$INTEGRATION_ONLY" = "1" ]; then
+    SESSION_DATA="$OPT_SHARE/singularity/labwc"
+    MIGRATE_SCRIPT="$OPT_SHARE/singularity/labwc/migrate-labwc-rc.py"
+fi
+
 run_as_user mkdir -p "$REAL_HOME/.config/labwc"
 OWNER_ARGS=(-o "$REAL_USER" -g "$REAL_USER")
 [ -n "$TEST_ROOT" ] && OWNER_ARGS=()
 install "${OWNER_ARGS[@]}" -m 0644 \
-    "$SESSION_SRC/config/labwc/themerc" "$REAL_HOME/.config/labwc/themerc"
+    "$SESSION_DATA/themerc" "$REAL_HOME/.config/labwc/themerc"
 
 if command -v python3 >/dev/null 2>&1; then
-    run_as_user python3 "$SESSION_SRC/scripts/migrate-labwc-rc.py" \
-        "$SESSION_SRC/config/labwc/rc.xml" \
+    run_as_user python3 "$MIGRATE_SCRIPT" \
+        "$SESSION_DATA/rc.xml" \
         "$REAL_HOME/.config/labwc/rc.xml" \
         --state "$REAL_HOME/.local/state/singularity/labwc-keybinds" \
         2>&1 | sed 's/^/  /'

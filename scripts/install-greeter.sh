@@ -28,9 +28,13 @@ has_runit() {
     [ -d /etc/sv ] && [ -d /var/service ]
 }
 
-if [ -x /opt/local/bin/labwc ]; then
+# Match the prefix that actually has the greeter (a stale /opt/local with only
+# labwc must not shadow a /usr package install). SINGULARITY_PREFIX wins.
+if [ -n "${SINGULARITY_PREFIX:-}" ]; then
+    PREFIX="$SINGULARITY_PREFIX"
+elif [ -x /opt/local/bin/singularity-greeter ]; then
     PREFIX="/opt/local"
-elif [ -x /usr/local/bin/labwc ]; then
+elif [ -x /usr/local/bin/singularity-greeter ]; then
     PREFIX="/usr/local"
 else
     PREFIX="/usr"
