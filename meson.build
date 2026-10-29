@@ -10,6 +10,10 @@ fs = import('fs')
 glibc_compat = ['-include', meson.current_source_dir() / 'compat' / 'glibc-compat.h']
 glibc_compat_link = []
 is_glibc = meson.get_compiler('c').get_define('__GLIBC__', prefix: '#include <features.h>') != ''
+# musl has no backtrace() in libc; the shell uses it for crash reports.
+if not is_glibc and meson.get_compiler('c').find_library('execinfo', required: false).found()
+  add_global_link_arguments('-lexecinfo', language: 'c')
+endif
 if is_glibc and host_machine.cpu_family() == 'x86_64'
   foreach fn : ['atan2f', 'fmod', 'fmodf', 'hypot', 'hypotf', 'sqrtf']
     glibc_compat_link += '-Wl,--wrap=' + fn

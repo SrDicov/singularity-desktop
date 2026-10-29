@@ -94,7 +94,7 @@ VOID=(
     libjpeg-turbo-devel tiff-devel libwebp-devel vulkan-loader-devel Vulkan-Headers
     shaderc go cargo libevdev-devel libfido2-devel libwacom-devel libsodium-devel
     libzbar-devel libgcrypt-devel nettle-devel freerdp3-devel sane-devel SDL2-devel
-    enchant2-devel libgphoto2-devel
+    enchant2-devel libgphoto2-devel libexecinfo-devel
     fuse3-devel liblzma-devel mtdev-devel sqlite-devel libzstd-devel zlib-devel
     gnutls-devel glu-devel libwebkitgtk60-devel
 )
