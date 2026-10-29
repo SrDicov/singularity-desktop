@@ -130,6 +130,11 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 - The package depends on `bash`, `dejavu-fonts-ttf` and `xkeyboard-config`:
   the session launchers are bash scripts, labwc aborts with "no fonts are
   available" on a font-less system, and the compositor needs the xkb data.
+  `labwc-singularity` itself pulls the font and xkb packages.
+- Headless smoke test (no seat, any container with a DRM render node):
+  `WLR_BACKENDS=headless WLR_RENDERER=gles2 WLR_LIBINPUT_NO_DEVICES=1 labwc -S /bin/true`.
+  Scenefx needs a DRM FD, so pass `/dev/dri/renderD128`. Without one it exits
+  with "Cannot create GLES2 renderer: no DRM FD available".
 - Binary packages: the templates live in
   [SrDicov/z-packages](https://github.com/SrDicov/z-packages) and publish to
   [SrDicov/z-repo](https://github.com/SrDicov/z-repo). Install with:

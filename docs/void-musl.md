@@ -46,9 +46,10 @@ The musl runtime path is the same as glibc minus gestures:
 - Gestures: cannot be enabled because the prebuilt blobs are glibc-only.
   Rebuilding the MediaPipe/ONNX runtime for musl is out of scope. Tracked in
   `TODO.md` as an internal follow-up.
-- The vendored `scenefx` headers use `__always_inline`, which musl's headers do
-  not export. The xbps templates apply `scenefx-musl-always-inline.patch` to
-  both the standalone labwc build and the desktop's vendored copy.
+- scenefx headers use `__always_inline`, which musl's headers do not export.
+  `labwc-singularity` applies `files/scenefx-musl-always-inline.patch` after
+  extracting its bundled scenefx. The desktop package does not build labwc, so
+  it carries no scenefx copy.
 - The session scripts are bash and labwc refuses to start with no fonts, so the
   package depends on `bash`, `dejavu-fonts-ttf` and `xkeyboard-config`.
 - No prebuilt musl package. Build from source as above.
