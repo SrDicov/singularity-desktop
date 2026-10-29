@@ -73,6 +73,7 @@ ARCH=(
 
 VOID=(
     cmake meson ninja vala pkg-config gettext git curl unzip python3 sassc scdoc
+    gcc make
     gobject-introspection wayland-protocols hwids iso-codes
     glib-devel gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel gtksourceview5-devel
     libpeas2-devel libgee-devel NetworkManager-devel upower-devel pulseaudio-devel
