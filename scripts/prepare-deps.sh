@@ -71,6 +71,32 @@ ARCH=(
     cmocka libxcrypt libdecor qt6-base
 )
 
+VOID=(
+    cmake meson ninja vala pkg-config gettext git curl unzip python3 sassc scdoc
+    gobject-introspection wayland-protocols hwids iso-codes
+    glib-devel gtk4-devel gtk4-layer-shell-devel vte3-gtk4-devel gtksourceview5-devel
+    libpeas2-devel libgee-devel NetworkManager-devel upower-devel pulseaudio-devel
+    gnome-online-accounts-devel polkit-devel libsoup3-devel json-glib-devel
+    libdbusmenu-glib-devel at-spi2-core-devel tinysparql-devel eudev-libudev-devel
+    libgudev-devel pam-devel elogind-devel wayland-devel libxkbcommon-devel
+    cairo-devel pango-devel gdk-pixbuf-devel libxcb-devel libpng-devel librsvg-devel
+    libsfdo-devel libxml2-devel libsecret-devel poppler-glib-devel
+    gst-plugins-base1-devel gst1-editing-services-devel pipewire-devel
+    libdisplay-info-devel libliftoff-devel libdrm-devel MesaLib-devel libglvnd-devel
+    libgbm-devel libinput-devel libseat-devel xorg-server-xwayland xorgproto xcb-proto
+    libX11-devel libXcursor-devel libXdamage-devel libXext-devel libXfixes-devel
+    libXi-devel libXinerama-devel libXrandr-devel libXrender-devel libXcomposite-devel
+    libXres-devel libXxf86vm-devel libXtst-devel libXScrnSaver-devel
+    xcb-util-devel xcb-util-wm-devel xcb-util-errors-devel xcb-util-image-devel
+    xcb-util-keysyms-devel xcb-util-renderutil-devel xcb-util-cursor-devel
+    libusb-devel cmocka-devel libxcrypt-devel cups-devel colord-devel libarchive-devel
+    libjpeg-turbo-devel tiff-devel libwebp-devel vulkan-loader-devel Vulkan-Headers
+    shaderc go cargo libevdev-devel libfido2-devel libwacom-devel libsodium-devel
+    libzbar-devel libgcrypt-devel nettle-devel freerdp3-devel sane-devel SDL2-devel
+    fuse3-devel liblzma-devel mtdev-devel sqlite-devel libzstd-devel zlib-devel
+    gnutls-devel glu-devel libwebkitgtk60-devel
+)
+
 DRY_RUN=0
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=1
 
@@ -126,6 +152,10 @@ install_pacman() {
     run pacman -Syu --needed --noconfirm "${ARCH[@]}"
 }
 
+install_xbps() {
+    run xbps-install -Sy "${VOID[@]}"
+}
+
 [ -r /etc/os-release ] || { echo "Cannot detect the distribution: /etc/os-release is missing" >&2; exit 1; }
 . /etc/os-release
 family=" ${ID:-} ${ID_LIKE:-} "
@@ -136,6 +166,7 @@ case "$family" in
     *" fedora "*|*" rhel "*|*" centos "*) install_dnf ;;
     *" suse "*|*" opensuse "*) install_zypper ;;
     *" arch "*) install_pacman ;;
+    *" void "*) install_xbps ;;
     *)
         echo "Unsupported distribution ${ID:-unknown}. Install the packages providing these pkg-config modules:" >&2
         printf '  %s\n' "${PKGCONFIG[@]}" >&2
