@@ -164,4 +164,4 @@ Open a GitHub Issue with:
 ## Getting Help
 
 - Open a Discussion on GitHub for questions
-- Tag `@singularityos-lab/core` for review requests
+- Open an issue in this repository for review requests
