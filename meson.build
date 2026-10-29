@@ -38,6 +38,12 @@ endif
 subdir('data')
 subdir('po')
 
+# Void (and other minimal distros) ship no cups.vapi, but the toolkit needs it
+# for print support. Bundle one and add it to the Vala search path.
+if not fs.is_file('/usr/share/vala/vapi/cups.vapi') and not fs.is_file('/usr/local/share/vala/vapi/cups.vapi')
+  add_global_arguments('--vapidir', meson.current_source_dir() / 'compat' / 'vapi', language: 'vala')
+endif
+
 subproject('libsingularity')
 subproject('singularity-loginui')
 

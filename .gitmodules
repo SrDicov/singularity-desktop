@@ -1,6 +1,6 @@
 [submodule "subprojects/libsingularity"]
 	path = subprojects/libsingularity
-	url = https://github.com/singularityos-lab/libsingularity.git
+	url = https://github.com/SrDicov/libsingularity.git
 	branch = main
 
 [submodule "subprojects/singularity-files"]
@@ -74,7 +74,7 @@
 	branch = main
 [submodule "subprojects/singularity-write"]
 	path = subprojects/singularity-write
-	url = https://github.com/singularityos-lab/singularity-write.git
+	url = https://github.com/SrDicov/singularity-write.git
 	branch = main
 [submodule "subprojects/singularity-greeter"]
 	path = subprojects/singularity-greeter
