@@ -157,7 +157,13 @@ install_pacman() {
 }
 
 install_xbps() {
-    run xbps-install -Sy "${VOID[@]}"
+    run xbps-install -S
+    local available=() missing=() name
+    for name in "${VOID[@]}"; do
+        if xbps-query -R "$name" >/dev/null 2>&1; then available+=("$name"); else missing+=("$name"); fi
+    done
+    [ "${#missing[@]}" -gt 0 ] && echo "Not available on this repository (musl?), skipped: ${missing[*]}" >&2
+    run xbps-install -Sy "${available[@]}"
 }
 
 [ -r /etc/os-release ] || { echo "Cannot detect the distribution: /etc/os-release is missing" >&2; exit 1; }
