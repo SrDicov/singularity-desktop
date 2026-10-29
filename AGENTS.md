@@ -21,3 +21,71 @@ to `none`, `trivial`, or `disclosed`. Use `disclosed` when at least one commit
 has the trailers above. Review every assisted change before submission.
 
 Do not create the commit or pull request until its disclosure matches the work.
+`.github/workflows/ai-disclosure.yml` enforces this; its checker is
+`.github/scripts/check-ai-disclosure.cjs`.
+
+## This is a meta-repo
+
+- Real source for the shell, the toolkit, and every app is in git submodules
+  under `subprojects/`. The root only wires the build (`meson.build`,
+  `Makefile`, `scripts/`, `data/`, `Containerfile`, `cpak/`).
+- `git submodule status` shows `-` prefixes here: submodules are not checked
+  out. Run `git submodule update --init --recursive` before touching code.
+- Edit app/shell/toolkit code in its submodule repo and commit there. The
+  meta-repo commit only bumps the submodule pointer. Do not copy a submodule's
+  files into the root.
+- Root `meson.build` is the source of truth for what gets built.
+  `CONTRIBUTING.md`'s architecture tree (`src/core`, `src/apps`) is stale: that
+  code now lives in `subprojects/singularity-shell` and the `singularity-*`
+  submodules.
+
+## Branch and commits
+
+- Default branch is `master` (CONTRIBUTING.md says `main`; the repo and CI use
+  `master`). Target PRs at `master`.
+- Conventional Commits: `<type>: <subject>` with `feat`, `fix`, `chore`,
+  `docs`, `build`, `ci`, `refactor`, `perf`, `style`, `test`, `revert`.
+
+## Build and run
+
+- `make prepare-deps` installs dependencies (Debian, Fedora, openSUSE, Arch);
+  add `--dry-run` via `bash scripts/prepare-deps.sh --dry-run` to only print.
+- `make` is the full build: it first builds labwc, libinput, libfprint (cloned
+  into `subprojects/` on demand) and `sit`, then the desktop. A bare
+  `meson setup build && meson compile -C build` is not enough on a fresh
+  checkout.
+- Configuring needs Go to build `subprojects/vetro` (or a system `vetro`), and
+  the gesture runtime (`make gesture-runtime`) unless `GESTURES=disabled`.
+- App tiers come from `apps.txt`: `-Dapps=all|core|essential` or
+  `APPS=all|core|essential` (`SKIP_EXTRA=1`, `SKIP_NONESSENTIAL=1`).
+- `make install-app <app>` (for example `messages`) rebuilds and deploys one
+  app plus libsingularity. It requires an already-configured `build/`, so run
+  `make` once first.
+- `make install` deploys to `/opt/local` and needs root (via `run0`).
+  `bash scripts/deploy-to-host.sh --root DIR` deploys into a scratch dir as a
+  normal user; `--dry-run` lists every installed file.
+
+## Testing and verification
+
+- There is no automated test suite for the shell or apps. `libsingularity` is
+  built in CI (`.github/workflows/libsingularity-ci.yml`); `make
+  libfprint-test` runs libfprint's tests.
+- Builds must be warning-free (`ninja -C build`); CONTRIBUTING asks for zero
+  errors and zero warnings.
+- `node --test .github/scripts/check-ai-disclosure.test.cjs` tests the
+  disclosure checker.
+
+## Conventions worth knowing
+
+- Vala, 4-space indent. No Adwaita in the core shell. No `Gtk.MessageDialog`
+  (use `Gtk.InfoBar` or a `SettingsPage`). Store `Timeout`/`Idle` IDs and cancel
+  them in `dispose()`. Spawn with `GLib.Subprocess.newv()`, not `sh -c`.
+- Headless backends (D-Bus, sysfs, hardware; no GTK) belong in
+  `libsingularity-system` (`subprojects/libsingularity/src/system/`), not the
+  shell.
+- Adding an app needs three edits: submodule in `.gitmodules`, a
+  `<name> <tier>` line in `apps.txt`, and a matching `subproject()` in root
+  `meson.build`.
+- After editing `data/dev.sinty.desktop.gschema.xml`, run `make schemas`.
+- `cpak.json`'s `image` digest is rewritten by `cpak-publish.yml`; do not
+  hand-edit it.
