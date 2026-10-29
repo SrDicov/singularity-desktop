@@ -56,8 +56,12 @@ find_fprintd() {
     return 1
 }
 
+has_systemd() {
+    [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1
+}
+
 has_fprintd_unit() {
-    command -v systemctl >/dev/null 2>&1 && systemctl cat fprintd.service >/dev/null 2>&1
+    has_systemd && systemctl cat fprintd.service >/dev/null 2>&1
 }
 
 restart_fprintd() {
@@ -114,8 +118,19 @@ install() {
 
     local fprintd check_lib="$FPRINT_LIB"
     [ "$DRY_RUN" = 1 ] && check_lib="$LIBFPRINT_STAGE:$GUSB_STAGE"
-    if ! fprintd=$(find_fprintd) || ! has_fprintd_unit; then
+    if ! fprintd=$(find_fprintd); then
         echo "  fprintd is not installed; the fprintd override is skipped"
+        return 0
+    fi
+    if ! has_systemd; then
+        # runit/OpenRC: no service drop-ins. Point the service at the TOD libs.
+        echo "  no systemd: skipping the fprintd drop-in."
+        echo "  Start fprintd with LD_LIBRARY_PATH=$FPRINT_LIB:$DRIVERS_DIR/singularity-fprint-drivers"
+        echo "  On Void/runit, add that to /etc/sv/fprintd/run (or a local service)."
+        return 0
+    fi
+    if ! has_fprintd_unit; then
+        echo "  fprintd.service not found; the fprintd override is skipped"
         return 0
     fi
     if LD_LIBRARY_PATH="$check_lib" ldd "$fprintd" 2>&1 | grep -q "not found"; then
