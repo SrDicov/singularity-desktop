@@ -104,12 +104,12 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 - Fingerprint: `scripts/install-fprint.sh` installs the libfprint-TOD
   libraries, but the fprintd wiring is a systemd drop-in. On Void it skips the
   drop-in and prints the `LD_LIBRARY_PATH` to add to `/etc/sv/fprintd/run`.
-- musl: `-Dgestures=disabled` is supported. The musl base image may not ship
-  `bash`: `xbps-install -S bash` before `make prepare-deps`. A full musl
-  build has not been run yet. Audit so far: the glibc symbol-version shims in
-  `compat/glibc-compat.h` and `scripts/sit-host-compat.h` are guarded by
-  `__GLIBC__` (no-ops on musl), and `deploy-to-host.sh` no longer requires
-  `getent`. Remaining work is the full musl build test.
+- musl: the full tree builds with `-Dgestures=disabled` (tested on
+  `void-musl`, both `meson setup` and `meson compile`). The base image may not
+  ship `bash`: `xbps-install -S bash` before `make prepare-deps`.
+  `libexecinfo-devel` is needed (the crash handler uses `backtrace`); the
+  glibc repo does not ship it and `prepare-deps` skips it there. The gesture
+  runtime blobs and the published xbps package stay glibc-only.
 - Restart the session (logout/login) after every deploy so the new binary
   is picked up.
 - Binary packages: the templates live in
