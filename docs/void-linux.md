@@ -99,8 +99,8 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 
 - Date/time, timezone, NTP toggle and hostname work via `pkexec` fallback
   (needs `polkit` + admin auth: root password or a wheel user).
-- NTP toggle manages the runit service (`/etc/sv/ntpd` from `openntpd`, or
-  `chronyd`).
+- NTP toggle manages the runit service (`/etc/sv/openntpd` from `openntpd`,
+  `/etc/sv/ntpd` from `ntp`, or `/etc/sv/chronyd` from `chrony`).
 - Fingerprint: `scripts/install-fprint.sh` installs the libfprint-TOD
   libraries, but the fprintd wiring is a systemd drop-in. On Void it skips the
   drop-in and prints the `LD_LIBRARY_PATH` to add to `/etc/sv/fprintd/run`.
