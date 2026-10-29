@@ -45,7 +45,7 @@ jobs:
       - id: desktop-meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          images: ghcr.io/singularityos-lab/singularity-desktop
+          images: ghcr.io/srdicov/singularity-desktop
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -67,7 +67,7 @@ jobs:
           sbom: true
 
       - name: Publish summary
-        run: echo "ghcr.io/singularityos-lab/singularity-desktop@${{ steps.desktop.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "ghcr.io/srdicov/singularity-desktop@${{ steps.desktop.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Pin published image
         env:
@@ -98,8 +98,8 @@ jobs:
           CPAK_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cpak-sign state \
-            --origin github.com/singularityos-lab/singularity-desktop \
+            --origin github.com/srdicov/singularity-desktop \
             --generation "${{ github.run_number }}"
           cosign sign-blob --yes --new-bundle-format=true \
             --bundle cpak-state.sigstore.json cpak-state
-          cpak-sign attach --image ghcr.io/singularityos-lab/singularity-desktop
+          cpak-sign attach --image ghcr.io/srdicov/singularity-desktop

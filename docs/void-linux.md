@@ -27,7 +27,7 @@ third-party GTK global menus just won't appear.
 ## 2. Build
 
 ```sh
-git clone --recurse-submodules https://github.com/singularityos-lab/singularity-desktop
+git clone --recurse-submodules https://github.com/SrDicov/singularity-desktop
 cd singularity-desktop
 make
 ```

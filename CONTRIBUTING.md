@@ -9,7 +9,7 @@ a development build as fast as possible.
 
 ```bash
 # 1. Clone with submodules
-git clone --recurse-submodules https://github.com/singularityos-lab/singularity-desktop
+git clone --recurse-submodules https://github.com/SrDicov/singularity-desktop
 cd singularity-desktop
 
 # 2. Install dependencies (Fedora / Silverblue)

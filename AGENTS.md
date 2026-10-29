@@ -90,3 +90,24 @@ Do not create the commit or pull request until its disclosure matches the work.
 - After editing `data/dev.sinty.desktop.gschema.xml`, run `make schemas`.
 - `cpak.json`'s `image` digest is rewritten by `cpak-publish.yml`; do not
   hand-edit it.
+
+## Detached fork policy
+
+- This tree is a standalone fork. Only `SrDicov/*` repos are writable:
+  `singularity-desktop` plus the four patched submodules (`libsingularity`,
+  `singularity-shell`, `singularity-session`, `singularity-write`).
+- Never open PRs, issues, comments, releases or pushes against any other repo.
+  The unpatched submodules are fetched read-only from their original URLs;
+  that is a passive download, not a contribution.
+- Keep `origin` as the only writable remote. Do not add an `upstream` remote
+  with push access. See `docs/FORK.md` for the re-sync procedure (fetch only).
+
+## Packaging CI concurrency
+
+- `z-packages/.github/workflows/trigger-repos.yml` must not dispatch a build
+  while `z-repo` or `z-repo-musl` already has a run that is not `completed`;
+  the dispatch is skipped in that case. It also runs with `cancel-in-progress:
+  true` so rapid pushes collapse into one trigger.
+- The autobuild workflows keep `concurrency.cancel-in-progress: false`; the
+  guard in the trigger is what prevents a fresh dispatch from killing a
+  running 40-minute build.
