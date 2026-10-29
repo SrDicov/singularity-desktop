@@ -1,10 +1,10 @@
 # Template file for 'labwc-singularity'
-# DRAFT - the Singularity labwc fork (branch 'singularity'). Replaces stock
-# labwc: the session launches $PREFIX/bin/labwc with Singularity patches.
 pkgname=labwc-singularity
 version=0.20.2
 revision=1
-_commit="singularity"
+# Pinned to the commit recorded in the singularity-desktop submodule. Bump it
+# together with the submodule so the fork and the desktop stay in sync.
+_commit="458dddc5c78cf211a1a9f43baa16d221ed96a223"
 build_style=meson
 configure_args="--prefix=/usr --libdir=lib --buildtype=release
  -Dxwayland=enabled --force-fallback-for=wlroots-0.20"
@@ -13,16 +13,18 @@ makedepends="cairo-devel glib-devel libpng-devel librsvg-devel libsfdo-devel
  libxml2-devel pango-devel wlroots0.20-devel xorg-server-xwayland
  libdisplay-info-devel libliftoff-devel libdrm-devel libinput-devel
  libseat-devel libxkbcommon-devel eudev-libudev-devel"
+# The desktop launches this fork; it must replace the stock package.
 conflicts="labwc>=0"
 provides="labwc-${version}_${revision}"
 short_desc="Singularity fork of the labwc Wayland compositor"
-maintainer="singularityos-lab"
+maintainer="Dicov <SrDicov@gmail.com>"
 license="GPL-2.0-or-later"
 homepage="https://github.com/singularityos-lab/singularity-desktop"
 repository="https://github.com/singularityos-lab/labwc.git"
 
 do_fetch() {
-	msg_normal "Cloning ${repository} (branch ${_commit}) with submodules...\n"
-	git clone --recurse-submodules --branch "${_commit}" \
-		"${repository}" "${pkgname}-${version}"
+	msg_normal "Cloning ${repository} (${_commit}) with submodules...\n"
+	git clone --recurse-submodules "${repository}" "${pkgname}-${version}"
+	(cd "${pkgname}-${version}" && git checkout "${_commit}" \
+		&& git submodule update --init --recursive)
 }

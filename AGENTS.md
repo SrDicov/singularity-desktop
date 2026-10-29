@@ -48,8 +48,9 @@ Do not create the commit or pull request until its disclosure matches the work.
 
 ## Build and run
 
-- `make prepare-deps` installs dependencies (Debian, Fedora, openSUSE, Arch);
-  add `--dry-run` via `bash scripts/prepare-deps.sh --dry-run` to only print.
+- `make prepare-deps` installs dependencies (Debian, Fedora, openSUSE, Arch,
+  Void); add `--dry-run` via `bash scripts/prepare-deps.sh --dry-run` to only
+  print.
 - `make` is the full build: it first builds labwc, libinput, libfprint (cloned
   into `subprojects/` on demand) and `sit`, then the desktop. A bare
   `meson setup build && meson compile -C build` is not enough on a fresh
