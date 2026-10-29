@@ -67,7 +67,9 @@ fi
 
 # sudo sets SUDO_USER, doas sets DOAS_USER, run0 gets ORIG_USER above.
 REAL_USER="${ORIG_USER:-${SUDO_USER:-${DOAS_USER:-$USER}}}"
-REAL_HOME="${ORIG_HOME:-$(getent passwd "$REAL_USER" | cut -d: -f6)}"
+REAL_HOME="${ORIG_HOME:-$(getent passwd "$REAL_USER" 2>/dev/null | cut -d: -f6)}"
+# musl images may not ship getent; fall back to /etc/passwd.
+[ -n "$REAL_HOME" ] || REAL_HOME="$(awk -F: -v u="$REAL_USER" '$1==u { print $6 }' /etc/passwd 2>/dev/null)"
 if [ -z "$REAL_HOME" ] || [ "$REAL_HOME" = "/" ]; then
     echo "ERROR: cannot determine the calling user's HOME (REAL_USER='$REAL_USER')" >&2
     exit 1
