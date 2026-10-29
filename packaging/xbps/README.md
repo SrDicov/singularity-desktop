@@ -11,6 +11,17 @@ built/published to [SrDicov/z-repo](https://github.com/SrDicov/z-repo).
 Do not keep copies here: they drift. Update the z-packages templates and
 let the z-repo autobuild publish the binaries.
 
+The autobuild does not start a second run while one is active; a forced
+rebuild is:
+
+```sh
+gh workflow run autobuild.yml -R SrDicov/z-repo \
+  -f packages="singularity-desktop,labwc-singularity" -f force=true
+```
+
+The musl build path (source only, gestures disabled) is in
+[`docs/void-musl.md`](../../docs/void-musl.md).
+
 To install from z-repo, follow the README in that repository:
 
 ```sh
