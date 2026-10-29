@@ -66,7 +66,7 @@ if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$TEST_ROOT" ]; then
 fi
 
 # sudo sets SUDO_USER, doas sets DOAS_USER, run0 gets ORIG_USER above.
-REAL_USER="${ORIG_USER:-${SUDO_USER:-${DOAS_USER:-$USER}}}"
+REAL_USER="${ORIG_USER:-${SUDO_USER:-${DOAS_USER:-${USER:-$(id -un)}}}}"
 REAL_HOME="${ORIG_HOME:-$(getent passwd "$REAL_USER" 2>/dev/null | cut -d: -f6)}"
 # musl images may not ship getent; fall back to /etc/passwd.
 [ -n "$REAL_HOME" ] || REAL_HOME="$(awk -F: -v u="$REAL_USER" '$1==u { print $6 }' /etc/passwd 2>/dev/null)"
@@ -98,7 +98,9 @@ run_as_user() {
         HOME="$REAL_HOME"
         XDG_RUNTIME_DIR="$REAL_XDG_RUNTIME_DIR"
         DBUS_SESSION_BUS_ADDRESS="unix:path=$REAL_XDG_RUNTIME_DIR/bus")
-    if command -v runuser >/dev/null; then
+    if [ "$(id -un)" = "$REAL_USER" ]; then
+        "${env_prefix[@]}" "$@"
+    elif command -v runuser >/dev/null; then
         runuser -u "$REAL_USER" -- "${env_prefix[@]}" "$@"
     elif command -v sudo >/dev/null; then
         sudo -u "$REAL_USER" "${env_prefix[@]}" "$@"
@@ -277,6 +279,16 @@ check_runtime() {
 echo "Deploying Singularity to $PREFIX ..."
 take_snapshot
 
+# Used by the icon/theme copy loops; empty SKIPPED_APPS (package install) keeps
+# everything.
+is_skipped_path() {
+    local app
+    for app in $SKIPPED_APPS; do
+        [[ "$1" == "$PROJECT_DIR/subprojects/$app/"* ]] && return 0
+    done
+    return 1
+}
+
 echo "Installing binaries..."
 # Integration-only: binaries already live in $OPT_BIN, skip the build scan.
 if [ "$INTEGRATION_ONLY" = "0" ]; then
@@ -313,14 +325,6 @@ while read -r app tier; do
         SKIPPED_APPS="$SKIPPED_APPS $app"
     fi
 done < <(cat "$PROJECT_DIR/apps.txt" "$PROJECT_DIR/apps.local.txt" 2>/dev/null)
-
-is_skipped_path() {
-    local app
-    for app in $SKIPPED_APPS; do
-        [[ "$1" == "$PROJECT_DIR/subprojects/$app/"* ]] && return 0
-    done
-    return 1
-}
 
 for app in $APP_LIST; do
     app_path=""
@@ -443,7 +447,12 @@ if [ -d "$BUILD/extra-libs" ]; then
 fi
 fi # INTEGRATION_ONLY libs
 
-bash "$PROJECT_DIR/scripts/install-fprint.sh" --prefix "$PREFIX" ${TEST_ROOT:+--dry-run} || echo "  WARNING: the fingerprint driver integration was not installed" >&2
+if [ -f "$PROJECT_DIR/scripts/install-fprint.sh" ]; then
+    bash "$PROJECT_DIR/scripts/install-fprint.sh" --prefix "$PREFIX" ${TEST_ROOT:+--dry-run} \
+        || echo "  WARNING: the fingerprint driver integration was not installed" >&2
+else
+    echo "  fingerprint integration skipped (package install)"
+fi
 
 echo "Installing plugins..."
 # Unmatched globs would create a literal '*' dir without a build tree.
@@ -628,7 +637,9 @@ if [ -d "$OPT_SHARE/mime/packages" ] && command -v update-mime-database >/dev/nu
 fi
 
 echo "Installing portal files / D-Bus services..."
-cp "$PROJECT_DIR/data/singularity.portal" "$OPT_PORTAL/singularity.portal"
+# Package installs already have the portal file from meson.
+[ -f "$PROJECT_DIR/data/singularity.portal" ] && \
+    cp "$PROJECT_DIR/data/singularity.portal" "$OPT_PORTAL/singularity.portal"
 
 SYS_DBUS=""
 for d in "$SYSROOT/usr/share/dbus-1/services" "$SYSROOT/usr/local/share/dbus-1/services"; do
@@ -764,12 +775,16 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 PORTALS_CONF_DIR="$REAL_HOME/.config/xdg-desktop-portal"
+# Package installs (no source tree) read the copy meson installed.
+PORTALS_CONF_SRC="$PROJECT_DIR/data/singularity-portals.conf"
+[ -f "$PORTALS_CONF_SRC" ] || \
+    PORTALS_CONF_SRC="$OPT_SHARE/xdg-desktop-portal/singularity-portals.conf"
 run_as_user mkdir -p "$PORTALS_CONF_DIR"
 {
-    cat "$PROJECT_DIR/data/singularity-portals.conf"
+    cat "$PORTALS_CONF_SRC"
     echo
     for iface in Screenshot Settings FileChooser AppChooser OpenURI ScreenCast; do
-        grep -q "^org.freedesktop.impl.portal.$iface=" "$PROJECT_DIR/data/singularity-portals.conf" || \
+        grep -q "^org.freedesktop.impl.portal.$iface=" "$PORTALS_CONF_SRC" || \
             echo "org.freedesktop.impl.portal.$iface=singularity"
     done
 } | sed '/^$/d' > "$PORTALS_CONF_DIR/singularity-portals.conf"
