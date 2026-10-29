@@ -101,9 +101,11 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   (needs `polkit` + admin auth: root password or a wheel user).
 - NTP toggle manages the runit service (`/etc/sv/openntpd` from `openntpd`,
   `/etc/sv/ntpd` from `ntp`, or `/etc/sv/chronyd` from `chrony`).
-- Fingerprint: `scripts/install-fprint.sh` installs the libfprint-TOD
-  libraries, but the fprintd wiring is a systemd drop-in. On Void it skips the
-  drop-in and prints the `LD_LIBRARY_PATH` to add to `/etc/sv/fprintd/run`.
+- Fingerprint: the standard Void `fprintd` package works with supported
+  sensors. The libfprint-TOD vendor drivers are a **source-build** feature
+  (`make install-fprint`); the xbps package does not ship them. On runit the
+  script skips the systemd drop-in and prints the `LD_LIBRARY_PATH` to add to
+  `/etc/sv/fprintd/run`. Automatic drop-in generation is not implemented.
 - musl: the full tree builds with `-Dgestures=disabled` (tested on
   `void-musl`, both `meson setup` and `meson compile`). The base image may not
   ship `bash`: `xbps-install -S bash` before `make prepare-deps`.
@@ -129,3 +131,12 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 
   `singularity-desktop` pulls `labwc-singularity`; do not install stock
   `labwc` alongside it.
+
+- Publishing CI: `z-packages` dispatches an autobuild only when `z-repo` (or
+  `z-repo-musl`) has no run in progress. During a 40-minute build, pushes to
+  other packages wait for the next trigger instead of cancelling it. To force
+  a build anyway:
+  `gh workflow run autobuild.yml -R SrDicov/z-repo -f packages="singularity-desktop,labwc-singularity" -f force=true`.
+- `appmenu-gtk-module` decision: not supported. It is absent from the Void
+  repos and third-party GTK global menus are out of scope; first-party apps are
+  unaffected.
