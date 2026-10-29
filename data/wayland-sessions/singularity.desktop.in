@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Singularity
+Comment=Singularity Desktop Environment
+Exec=@bindir@/singularity-labwc-session
+TryExec=@bindir@/singularity-desktop
+Type=Application
+DesktopNames=Singularity

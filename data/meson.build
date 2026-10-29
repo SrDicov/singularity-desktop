@@ -21,6 +21,21 @@ install_data(
   install_dir: get_option('datadir') / 'xdg-desktop-portal'
 )
 
+# Register the session with greetd/GDM without needing the deploy script.
+_session_conf = configuration_data()
+_session_bindir = get_option('bindir')
+if not _session_bindir.startswith('/')
+  _session_bindir = get_option('prefix') / _session_bindir
+endif
+_session_conf.set('bindir', _session_bindir)
+configure_file(
+  input: 'wayland-sessions/singularity.desktop.in',
+  output: 'singularity.desktop',
+  configuration: _session_conf,
+  install: true,
+  install_dir: get_option('datadir') / 'wayland-sessions',
+)
+
 # Session-bus activation of the portal backend. On runit hosts there is no
 # systemd --user to start the unit, so xdg-desktop-portal must be able to
 # activate the backend over D-Bus on its own. Only the /usr package gets these
