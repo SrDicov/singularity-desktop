@@ -7,8 +7,9 @@ unchanged. There is no `timedate1`/`hostnamed` on Void: date/timezone/hostname
 settings fall back to `pkexec` helpers (the session polkit agent prompts, same
 UX).
 
-Supported: **Void glibc, x86_64 only**. Void musl is not supported yet (see
-"musl" below).
+Supported: **Void glibc, x86_64**. Void musl x86_64 builds from source with
+`-Dgestures=disabled`; the gesture runtime blobs and the prebuilt xbps package
+stay glibc-only (see "musl" below).
 
 ## 1. Dependencies
 
@@ -90,8 +91,9 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `meson compile` finish with all 4538 targets built.
 - labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
   path (system wlroots 0.20 + patched scenefx) compile.
-- musl x86_64: dependencies installed and `meson setup -Dapps=all
-  -Dgestures=disabled` succeeds. A full musl compile is still pending.
+- musl x86_64: dependencies installed, `meson setup -Dapps=all
+  -Dgestures=disabled` succeeds, and a full `meson compile` finishes
+  (binary linked against `/lib/ld-musl-x86_64.so.1`).
 
 ## 6. Notes
 
