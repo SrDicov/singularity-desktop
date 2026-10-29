@@ -3,8 +3,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 if [ "$EUID" -ne 0 ]; then
     if [ -n "$container" ]; then
         exec host-spawn run0 bash "$0" "$@"

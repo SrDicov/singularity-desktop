@@ -406,14 +406,14 @@ if [ -n "$SIT_LIB" ]; then
     for m in "$SYSROOT"/usr/lib/*/gtk-4.0/4.0.0/immodules/*.so "$SYSROOT"/usr/lib64/gtk-4.0/4.0.0/immodules/*.so; do
         [ -f "$m" ] || continue
         mkdir -p "$SIT_IMMODULES"
-        [ -e "$SIT_IMMODULES/$(basename "$m")" ] || ln -sf "${m#$SYSROOT}" "$SIT_IMMODULES/$(basename "$m")"
+        [ -e "$SIT_IMMODULES/$(basename "$m")" ] || ln -sf "${m#"$SYSROOT"}" "$SIT_IMMODULES/$(basename "$m")"
     done
     for schema in "$SIT_ROOT"/share/glib-2.0/schemas/org.gtk.gtk4.*.gschema.xml; do
         [ -f "$schema" ] && cp "$schema" "$OPT_SCHEMAS/"
     done
     if [ -d "$SIT_ROOT/share/locale" ]; then
         while IFS= read -r mo; do
-            rel="${mo#$SIT_ROOT/share/locale/}"
+            rel="${mo#"$SIT_ROOT"/share/locale/}"
             mkdir -p "$OPT_SHARE/locale/$(dirname "$rel")"
             cp "$mo" "$OPT_SHARE/locale/$rel"
         done < <(find "$SIT_ROOT/share/locale" -name 'gtk40*.mo' -type f)
