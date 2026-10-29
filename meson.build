@@ -10,9 +10,6 @@ fs = import('fs')
 glibc_compat = ['-include', meson.current_source_dir() / 'compat' / 'glibc-compat.h']
 glibc_compat_link = []
 is_glibc = meson.get_compiler('c').get_define('__GLIBC__', prefix: '#include <features.h>') != ''
-if not is_glibc or host_machine.cpu_family() != 'x86_64'
-  glibc_compat = []
-endif
 if is_glibc and host_machine.cpu_family() == 'x86_64'
   foreach fn : ['atan2f', 'fmod', 'fmodf', 'hypot', 'hypotf', 'sqrtf']
     glibc_compat_link += '-Wl,--wrap=' + fn

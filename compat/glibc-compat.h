@@ -32,3 +32,17 @@ __attribute__((weak, visibility("hidden"))) float __wrap_sqrtf(float a) { return
 }
 #endif
 #endif
+
+/* Non-glibc libcs (musl) have no mallopt/malloc_trim. The shell only uses
+ * them as tuning hints, so compile them to no-ops instead of failing. */
+#if !defined(SINGULARITY_GLIBC_COMPAT)
+#include <stddef.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+static inline int mallopt (int param, int value) { (void) param; (void) value; return 1; }
+static inline int malloc_trim (size_t pad) { (void) pad; return 0; }
+#ifdef __cplusplus
+}
+#endif
+#endif
