@@ -97,6 +97,20 @@ service so greetd owns tty1. Reboot and log in.
   `getent`. Remaining work is the full musl build test.
 - Restart the session (logout/login) after every deploy so the new binary
   is picked up.
-- Binary packages: see `packaging/xbps/` (draft templates for void-packages;
-  makedepends verified against the Void repo index, full xbps-src build
-  pending).
+- Binary packages: the templates live in
+  [SrDicov/z-packages](https://github.com/SrDicov/z-packages) and publish to
+  [SrDicov/z-repo](https://github.com/SrDicov/z-repo). Install with:
+
+  ```sh
+  fp=02:16:21:e8:80:43:b6:16:d4:63:13:e5:5d:e1:32:b7
+  sudo mkdir -p /var/db/xbps/keys /etc/xbps.d
+  sudo curl -fsSL -o "/var/db/xbps/keys/$fp.plist" \
+    "https://github.com/SrDicov/z-repo/releases/download/stable/${fp//:/.}.plist"
+  echo "repository=https://github.com/SrDicov/z-repo/releases/download/stable" \
+    | sudo tee /etc/xbps.d/10-zrepo.conf
+  sudo xbps-install -S
+  sudo xbps-install singularity-desktop
+  ```
+
+  `singularity-desktop` pulls `labwc-singularity`; do not install stock
+  `labwc` alongside it.

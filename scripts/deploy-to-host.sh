@@ -1,7 +1,7 @@
 #!/bin/bash
 # Deploy Singularity Desktop. Run via: make install
 # Target prefix defaults to /opt/local; packagers installing to /usr set
-# SINGULARITY_PREFIX=/usr (see packaging/xbps).
+# SINGULARITY_PREFIX=/usr (see docs/void-linux.md).
 
 set -e
 
