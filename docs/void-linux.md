@@ -21,10 +21,11 @@ sudo make prepare-deps
 Void glibc x86_64 repo index. The xbps package pulls the full runtime set:
 `dbus elogind greetd xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs
 xdg-utils desktop-file-utils hicolor-icon-theme pipewire wireplumber
-NetworkManager upower bluez polkit fprintd cups shadow rtkit nftables
-libheif-tools sane udisks2 e2fsprogs btrfs-progs xfsprogs exfatprogs
-dosfstools ntfs-3g cryptsetup gvfs gvfs-smb gvfs-mtp gvfs-afc gvfs-gphoto2
-flatpak appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps.
+NetworkManager upower power-profiles-daemon bluez polkit fprintd cups shadow
+rtkit nftables libheif-tools sane udisks2 e2fsprogs btrfs-progs xfsprogs
+exfatprogs dosfstools ntfs-3g cryptsetup gvfs gvfs-smb gvfs-mtp gvfs-afc
+gvfs-gphoto2 flatpak gst-plugins-bad1 gst-plugins-ugly1 gst-libav
+appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps.
 `shadow` is required because `install-greeter.sh` creates the `greetd` user with
 `useradd`. `fprintd` is D-Bus activated; the other daemons need their runit
 service linked (`NetworkManager`, `bluetoothd`, `cupsd`, `rtkit`) unless you
@@ -148,6 +149,11 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `xbps-install` exists: checks run unprivileged (`xbps-install -un`),
   download and install run through `pkexec`. It can be forced with
   `Backend=xbps` in `singularity/updates.conf`.
+- Media: `gst-plugins-bad1`, `gst-plugins-ugly1` and `gst-libav` cover the
+  codecs the Videos and Music apps play. `noto-fonts-ttf` and
+  `noto-fonts-emoji` give full glyph and colour-emoji coverage.
+- Power: `power-profiles-daemon` is D-Bus activated and backs the
+  Performance/Balanced/Power Saver switch; `upower` supplies the battery data.
 - Files and the software store: `gvfs` (+ `smb`/`mtp`/`afc`/`gphoto2`
   backends) makes network shares and phones appear in Files, and `flatpak`
   backs the Store app. Samba server and Avahi are optional extras for

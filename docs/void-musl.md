@@ -64,7 +64,8 @@ The musl runtime path is the same as glibc minus gestures:
   `libheif-tools`, `sane`, `udisks2` and the filesystem tools (`e2fsprogs`,
   `btrfs-progs`, `xfsprogs`, `exfatprogs`, `dosfstools`, `ntfs-3g`,
   `cryptsetup`, `gvfs` with its smb/mtp/afc/gphoto2 backends, `flatpak`),
-  `xdg-utils`,
+  `gst-plugins-bad1`/`ugly1`/`gst-libav`, `power-profiles-daemon`,
+  `noto-fonts-ttf`, `noto-fonts-emoji`, `xdg-utils`,
   `xdg-desktop-portal-gtk` and `appmenu-gtk3-module`, so networking, battery,
   audio, Bluetooth, printing, fingerprint enrolment, greeter setup, file
   opening and third-party GTK global menus work without extra packages.
