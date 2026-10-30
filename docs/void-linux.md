@@ -99,12 +99,18 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 `void-musl`), 2026-10-30:
 
 - **Real package install (glibc)**: a clean `void-glibc` container with the
-  z-repo key and repository configured upgraded from `0.1.0_4` to
-  `singularity-desktop-0.1.0_14` / `labwc-singularity-0.20.2_3` with `EXIT 0`.
-  The repodata SHA256 equals the downloaded asset SHA256 for both packages
-  (`954cc6deaa9fd6165b61f596fda5edded96c00299931397726f0c3eae65e6e5d` and
-  `a04b14e1cc1c97d10c3ccb376bc67c09c4ae756485ed2b262b7d5c91dcdbb879`).
-- **CI is green**: the glibc autobuild for rev 14 finished `success`. The
+  z-repo key and repository configured ran `xbps-install -y
+  singularity-desktop` with `inst_rc=0` and installed
+  `singularity-desktop-0.1.0_23` plus `labwc-singularity-0.20.2_4`. The
+  repodata SHA256 equals the downloaded asset SHA256:
+  `927cf79a4427b014502c648c7260ef3bc2a253b2d311213e663b6fa0fe5c9b8d` for the
+  desktop and `7b489cf3e6249c52916866400f4f8429b2059285e20b8683b6e8f0978f50491e`
+  for labwc.
+- **Installing over stock labwc**: installing `labwc-0.20.2_1` first and then
+  the desktop removes the stock package (`labwc-0.20.2_1: removed
+  successfully`), installs `labwc-singularity-0.20.2_4` and leaves
+  `/usr/bin/labwc` owned by the fork. The fork provides `labwc-0.20.2_4`.
+- **CI is green**: the glibc autobuild for rev 23 finished `success`. The
   build log warns `only the autodeps teardown failed` because the seeded
   masterdir breaks xbps-src's cleanup after the package is created; the
   workflow accepts that only when the `.xbps` is new and it is the sole error.
@@ -114,29 +120,31 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `deploy-to-host.sh`.
 - **Session**: with `WLR_BACKENDS=headless WLR_RENDERER=gles2` and a DRM
   render node passed to the container, `singularity-labwc-session` starts
-  `labwc`, `singularity-desktop-session`, `singularity-polkit-agent` and
-  `singularity-desktop`; `xdg-desktop-portal` activates the
-  `org.freedesktop.impl.portal.desktop.singularity` backend over D-Bus and
-  `org.freedesktop.secrets` (keyring) activates on demand. The container has
-  no `/dev/fuse`, PipeWire daemon or seat, so the portal logs those warnings.
+  `labwc`, `singularity-desktop-session`, the polkit agent,
+  `singularity-desktop`, PipeWire, WirePlumber and `pipewire-pulse`. The
+  audio sockets `$XDG_RUNTIME_DIR/pipewire-0` and `pulse/native` exist, and
+  `xdg-desktop-portal` activates
+  `org.freedesktop.impl.portal.desktop.singularity`,
+  `xdg-desktop-portal-gtk` and `org.freedesktop.secrets`. The container has no
+  `/dev/fuse` or seat, so the portal logs those warnings.
+- **Locale**: with no `org.freedesktop.locale1`, writing
+  `~/.config/locale.conf` (`LANG=C`, `LC_TIME=C`) made the running labwc and
+  shell see both values; the manager listed 348 locale sources from
+  `/usr/share/i18n/locales`, and `xbps-reconfigure -f glibc-locales`
+  generated `de_DE.UTF-8` (visible in `locale -a`).
+- **Hostname**: with no `org.freedesktop.hostname1`, the manager selects the
+  `pkexec` backend and reports `can_change=true` instead of disabling the
+  field.
 - The package installs `wayland-sessions/singularity.desktop`, the three
   session-bus activation files, and the artist-pack helpers under `/usr/bin`
   (no `/usr/local` payload).
-- **Clean install pulls the full stack**: a fresh container with only `curl`
-  and `ca-certificates` added ran `xbps-install -y singularity-desktop`; it
-  pulled `bash`, `dejavu-fonts-ttf`, `xkeyboard-config`, `accountsservice`,
-  `wireplumber`, `mesa-dri`, `xorg-server-xwayland`, `labwc-singularity`,
-  `greetd`, `xdg-desktop-portal`, `elogind` and `dbus`. Nothing else is
-  required to start the session.
-- **Non-root session**: a regular `tester` user (groups `wheel/video/input/
-  audio`) started `singularity-labwc-session` headless and got `labwc`,
-  `singularity-desktop-session`, `singularity-desktop`,
-  `xdg-desktop-portal` and `xdg-desktop-portal-singularity` plus the
-  keyring bus name.
-- glibc x86_64: `meson setup -Dapps=all -Dgestures=disabled` and
-  `meson compile` finish with all 4538 targets built.
-- labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
-  path (system wlroots 0.20 + patched scenefx) compile.
+- **Clean install pulls the full stack**: the same container pulled
+  `glibc-locales`, `samba`, `fwupd`, `colord`, `geoclue2`, `avahi`,
+  `gvfs`/`smb`/`mtp`/`afc`/`gphoto2`, `flatpak`, `pipewire`, `wireplumber`,
+  `NetworkManager`, `upower`, `power-profiles-daemon`, `bluez`, `polkit`,
+  `fprintd`, `cups`, `udisks2` plus the filesystem tools, `nftables`,
+  `libheif-tools`, `sane`, `elfutils`, `libnotify`, `gst-plugins-*`,
+  `appmenu-gtk3-module` and the fonts. Every declared dependency was present.
 - musl x86_64: `xbps-src pkg` builds
   `singularity-desktop-0.1.0_11.x86_64-musl` and
   `labwc-singularity-0.20.2_3.x86_64-musl`, and both are published with
