@@ -50,6 +50,18 @@ done so no accidental push is possible.
 
 ## Known remaining upstream references
 
+- A submodule's `.git/config` can keep the URL it was first cloned from, even
+  after `.gitmodules` is edited. Verify both before pushing:
+
+  ```sh
+  git config --get-regexp '^submodule\..*\.url'
+  git -C subprojects/libsingularity remote get-url origin
+  ```
+
+  All four patched submodules must answer `SrDicov/*` in both places. Fix a
+  stale override with `git config submodule.subprojects/<name>.url <fork>` and
+  `git -C subprojects/<name> remote set-url origin <fork>`.
+
 - `cpak.json` keeps `github.com/singularityos-lab/singularity-runtime` as a
   layer dependency. There is no fork of that runtime under `SrDicov`; it is a
   read-only pull at install time.
