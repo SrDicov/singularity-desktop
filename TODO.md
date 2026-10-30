@@ -3,11 +3,30 @@
 Everything below needs hardware, a real display/seat, or CI time that this
 environment cannot provide. No internal code TODO is open.
 
+## [pending-external] Publish the rev 11 packages
+
+- What is missing: the `z-repo`/`z-repo-musl` autobuilds for
+  `singularity-desktop-0.1.0_11` (and `labwc-singularity-0.20.2_3`). Rev 11
+  fixes the `/usr/local` install abort and the missing portal D-Bus activation;
+  rev 10 and earlier cannot be published by xbps-src.
+- Unblocks it: the CI runners finishing the ~1.5h build.
+- Exact check:
+
+  ```sh
+  gh workflow run autobuild.yml -R SrDicov/z-repo \
+    -f packages="singularity-desktop,labwc-singularity" -f force=true
+  gh workflow run autobuild.yml -R SrDicov/z-repo-musl \
+    -f packages="singularity-desktop,labwc-singularity" -f force=true
+  gh release view stable -R SrDicov/z-repo --json assets | grep -o 'singularity-desktop[^"]*'
+  gh release view stable -R SrDicov/z-repo-musl --json assets | grep -o 'singularity-desktop[^"]*'
+  ```
+
 ## [pending-external] Graphical session on a real Void host
 
 - What is missing: a login through greetd into labwc + `singularity-desktop`
-  with a real DRM seat. The container test only proves the xbps install and the
-  binaries.
+  with a real DRM seat. The container test proves the xbps install, the
+  compositor start with a DRM render node, the shell process, and the portal /
+  keyring D-Bus activation; it does not exercise greetd, PAM or real input.
 - Unblocks it: any Void glibc x86_64 machine with a GPU/VM display.
 - Exact check:
 
@@ -16,8 +35,8 @@ environment cannot provide. No internal code TODO is open.
   sudo bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
   sudo bash /usr/share/doc/singularity-desktop/install-greeter.sh
   # reboot, log in, then:
-  systemctl --user status xdg-desktop-portal-singularity 2>/dev/null || true
   busctl --user list | grep -E 'portal.desktop.singularity|freedesktop.secrets'
+  busctl --user introspect org.freedesktop.impl.portal.desktop.singularity /org/freedesktop/portal/desktop
   ```
 
 ## [pending-external] Fingerprint enrolment and authentication
