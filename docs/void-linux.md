@@ -49,23 +49,17 @@ From a source checkout:
 make install            # sudo preferred, doas fallback, run0 only on systemd hosts
 ```
 
-From the `singularity-desktop` xbps package (scripts in doc dir, no build
-tree — integration-only mode is automatic, no env vars needed):
+From the `singularity-desktop` xbps package there is nothing to deploy: the
+package already ships the session entry, the portal/keyring D-Bus activation
+files, the polkit agent and every asset under `/usr`. Do **not** run
+`deploy-to-host.sh` after `xbps-install`; enable `dbus`/`elogind`, run
+`install-greeter.sh` (section 4) and reboot. The script exists only for source
+installs under `/opt/local`.
 
-```sh
-sudo bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
-# doas-only systems:
-doas bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
-```
-
-NOTE: `doas VAR=x cmd` does not work (doas rejects the assignment, and
-`sudo`'s `env_reset` strips it too). The scripts re-pass their own knobs
-across re-escalation themselves — always invoke them plainly. Only if you
-ever need an explicit prefix with doas, use `doas env VAR=x ...`.
-
-The script detects non-systemd hosts automatically: it skips systemd units
-(the portal/keyring activate over D-Bus; the polkit agent is started by the
-session itself) and tells you which runit services to enable:
+For a source install, the deploy script detects non-systemd hosts
+automatically: it skips systemd units (the portal/keyring activate over D-Bus;
+the polkit agent is started by the session itself) and tells you which runit
+services to enable:
 
 ```sh
 sudo ln -s /etc/sv/dbus /var/service/
@@ -90,10 +84,18 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 
 - **Real package install (glibc)**: a clean `void-glibc` container with the
   z-repo key and repository configured upgraded from `0.1.0_4` to
-  `singularity-desktop-0.1.0_11` / `labwc-singularity-0.20.2_3` with `EXIT 0`.
+  `singularity-desktop-0.1.0_14` / `labwc-singularity-0.20.2_3` with `EXIT 0`.
   The repodata SHA256 equals the downloaded asset SHA256 for both packages
-  (`bb5aabcbe2703a2d0e000c8589a5d3c71832495d785b3b023fdb61aee7bc0e31` and
-  `3a6d16afa1cf2574d71379d460b54dc84d41aedf1117e4c694220baed338ef5d`).
+  (`954cc6deaa9fd6165b61f596fda5edded96c00299931397726f0c3eae65e6e5d` and
+  `a04b14e1cc1c97d10c3ccb376bc67c09c4ae756485ed2b262b7d5c91dcdbb879`).
+- **CI is green**: the glibc autobuild for rev 14 finished `success`. The
+  build log warns `only the autodeps teardown failed` because the seeded
+  masterdir breaks xbps-src's cleanup after the package is created; the
+  workflow accepts that only when the `.xbps` is new and it is the sole error.
+- **Post-install message**: the package's `INSTALL` (now in the template root;
+  `files/*.INSTALL` is ignored by xbps-src) tells users to enable
+  `dbus`/`elogind`, run `install-greeter.sh` and not to run
+  `deploy-to-host.sh`.
 - **Session**: with `WLR_BACKENDS=headless WLR_RENDERER=gles2` and a DRM
   render node passed to the container, `singularity-labwc-session` starts
   `labwc`, `singularity-desktop-session`, `singularity-polkit-agent` and

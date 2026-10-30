@@ -15,7 +15,6 @@ environment cannot provide. No internal code TODO is open.
 
   ```sh
   sudo xbps-install -S singularity-desktop
-  sudo bash /usr/share/doc/singularity-desktop/deploy-to-host.sh
   sudo bash /usr/share/doc/singularity-desktop/install-greeter.sh
   # reboot, log in, then:
   busctl --user list | grep -E 'portal.desktop.singularity|freedesktop.secrets'
