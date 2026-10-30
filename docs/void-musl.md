@@ -65,7 +65,7 @@ The musl runtime path is the same as glibc minus gestures:
   `btrfs-progs`, `xfsprogs`, `exfatprogs`, `dosfstools`, `ntfs-3g`,
   `cryptsetup`, `gvfs` with its smb/mtp/afc/gphoto2 backends, `flatpak`),
   `gst-plugins-bad1`/`ugly1`/`gst-libav`, `elfutils`, `libnotify`,
-  `power-profiles-daemon`,
+  `power-profiles-daemon`, `colord`, `fwupd`, `geoclue2`, `avahi`, `samba`,
   `noto-fonts-ttf`, `noto-fonts-emoji`, `xdg-utils`,
   `xdg-desktop-portal-gtk` and `appmenu-gtk3-module`, so networking, battery,
   audio, Bluetooth, printing, fingerprint enrolment, greeter setup, file
@@ -76,6 +76,8 @@ The musl runtime path is the same as glibc minus gestures:
 ## Known limits
 
 - Gestures: cannot be enabled because the prebuilt blobs are glibc-only.
+- Locales: musl has no locale data (only `C.UTF-8`), so the Region page has
+  nothing to offer; the session runs in `C.UTF-8`.
   Rebuilding the MediaPipe/ONNX runtime for musl is out of scope. Tracked in
   `TODO.md` as an internal follow-up.
 - scenefx headers use `__always_inline`, which musl's headers do not export.

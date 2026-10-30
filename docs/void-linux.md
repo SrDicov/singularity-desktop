@@ -25,7 +25,8 @@ NetworkManager upower power-profiles-daemon bluez polkit fprintd cups shadow
 rtkit nftables libheif-tools sane udisks2 e2fsprogs btrfs-progs xfsprogs
 exfatprogs dosfstools ntfs-3g cryptsetup gvfs gvfs-smb gvfs-mtp gvfs-afc
 gvfs-gphoto2 flatpak gst-plugins-bad1 gst-plugins-ugly1 gst-libav elfutils
-libnotify appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps.
+libnotify colord fwupd geoclue2 avahi samba appmenu-gtk3-module`, plus
+`glibc-locales` on glibc (musl has no locale data). `NetworkManager` is capitalised in xbps.
 `shadow` is required because `install-greeter.sh` creates the `greetd` user with
 `useradd`. `fprintd` is D-Bus activated; the other daemons need their runit
 service linked (`NetworkManager`, `bluetoothd`, `cupsd`, `rtkit`) unless you
@@ -154,12 +155,18 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `noto-fonts-emoji` give full glyph and colour-emoji coverage.
 - Crash reports: `elfutils` supplies `eu-stack` for native stack traces;
   `libnotify` supplies `notify-send` for the screenshot toast.
+- Colour, firmware and location: `colord`, `fwupd` and `geoclue2` are D-Bus
+  activated and back the Colour, Firmware and automatic night-light pages.
+- Language and formats: without `systemd-localed`, the Region page writes
+  `~/.config/locale.conf`; the session reads it at login and reconfigures the
+  chosen locale through `xbps-reconfigure -f glibc-locales` (needs
+  `glibc-locales`, a one-time polkit prompt).
 - Power: `power-profiles-daemon` is D-Bus activated and backs the
   Performance/Balanced/Power Saver switch; `upower` supplies the battery data.
 - Files and the software store: `gvfs` (+ `smb`/`mtp`/`afc`/`gphoto2`
   backends) makes network shares and phones appear in Files, and `flatpak`
-  backs the Store app. Samba server and Avahi are optional extras for
-  sharing (`samba`, `avahi`).
+  backs the Store app. `samba` and `avahi` back folder sharing and discovery;
+  link `/etc/sv/smbd` (and `nmbd`/`avahi-daemon` if you want them) to share.
 - Disks/backups: `udisks2` plus the filesystem tools (`e2fsprogs`,
   `btrfs-progs`, `xfsprogs`, `exfatprogs`, `dosfstools`, `ntfs-3g`,
   `cryptsetup`) cover every format option the Disks app offers.
