@@ -104,6 +104,17 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 - The package installs `wayland-sessions/singularity.desktop`, the three
   session-bus activation files, and the artist-pack helpers under `/usr/bin`
   (no `/usr/local` payload).
+- **Clean install pulls the full stack**: a fresh container with only `curl`
+  and `ca-certificates` added ran `xbps-install -y singularity-desktop`; it
+  pulled `bash`, `dejavu-fonts-ttf`, `xkeyboard-config`, `accountsservice`,
+  `wireplumber`, `mesa-dri`, `xorg-server-xwayland`, `labwc-singularity`,
+  `greetd`, `xdg-desktop-portal`, `elogind` and `dbus`. Nothing else is
+  required to start the session.
+- **Non-root session**: a regular `tester` user (groups `wheel/video/input/
+  audio`) started `singularity-labwc-session` headless and got `labwc`,
+  `singularity-desktop-session`, `singularity-desktop`,
+  `xdg-desktop-portal` and `xdg-desktop-portal-singularity` plus the
+  keyring bus name.
 - glibc x86_64: `meson setup -Dapps=all -Dgestures=disabled` and
   `meson compile` finish with all 4538 targets built.
 - labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
