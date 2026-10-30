@@ -104,7 +104,7 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   `singularity-desktop-0.1.0_23` plus `labwc-singularity-0.20.2_4`. The
   repodata SHA256 equals the downloaded asset SHA256:
   `927cf79a4427b014502c648c7260ef3bc2a253b2d311213e663b6fa0fe5c9b8d` for the
-  desktop and `7b489cf3e6249c52916866400f4f8429b2059285e20b8683b6e8f0978f50491e`
+  desktop and `e8943123310c78e64ae21e81fa479de215615fcf664237e9024e440f59a18709`
   for labwc.
 - **Installing over stock labwc**: installing `labwc-0.20.2_1` first and then
   the desktop removes the stock package (`labwc-0.20.2_1: removed

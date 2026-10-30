@@ -42,14 +42,23 @@ old `-Dgestures=false` form is not valid and is not supported anywhere.
 Verified on `ghcr.io/void-linux/void-musl` (2026-10-30): `prepare-deps` OK,
 `meson setup` OK and a full `meson compile` finishes; the resulting binaries are
 linked against `/lib/ld-musl-x86_64.so.1`. `xbps-src pkg` builds
-`singularity-desktop-0.1.0_11.x86_64-musl` and
-`labwc-singularity-0.20.2_3.x86_64-musl`, both published with `.sig2`.
+`singularity-desktop-0.1.0_23.x86_64-musl` and
+`labwc-singularity-0.20.2_4.x86_64-musl`, both published with `.sig2`.
 
-A clean musl container installed them from `z-repo-musl` (`EXIT 0`, repodata
-SHA256 equals the downloaded asset SHA256), and a headless
-`singularity-labwc-session` started `labwc`, the desktop shell, the polkit agent
-and `xdg-desktop-portal-singularity`; `org.freedesktop.secrets` activates on
-demand. The gesture runtime directory is absent, as intended.
+A clean musl container installed them from `z-repo-musl` (`inst_rc=0`; repodata
+SHA256 equals the downloaded asset SHA256:
+`1a6722bc6a3f76bd9c7a232718db5ea2973bae812e6ebbd0c46013b450f84469` for the
+desktop and
+`5bd985a236a2429ab7a206e14725222a849ba3be0a28767163d54efad3bcc909` for labwc).
+Every declared dependency was present (54 checks, no misses), and installing
+over stock `labwc-0.20.2_1` removes it and installs `labwc-singularity-0.20.2_4`
+(`/usr/bin/labwc` owned by the fork). A headless
+`singularity-labwc-session` started `labwc`, the desktop shell, the polkit
+agent, `pipewire`, `wireplumber`, `pipewire-pulse`,
+`xdg-desktop-portal-singularity` and `xdg-desktop-portal-gtk`, with the audio
+sockets `pipewire-0`/`pulse/native` and the keyring bus name; the session
+exported `LANG`/`LC_TIME` from `~/.config/locale.conf`. The gesture runtime
+directory is absent, as intended.
 
 ## Runtime
 
