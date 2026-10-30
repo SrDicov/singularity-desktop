@@ -7,9 +7,9 @@ unchanged. There is no `timedate1`/`hostnamed` on Void: date/timezone/hostname
 settings fall back to `pkexec` helpers (the session polkit agent prompts, same
 UX).
 
-Supported: **Void glibc, x86_64**. Void musl x86_64 builds from source with
-`-Dgestures=disabled`; the gesture runtime blobs and the prebuilt xbps package
-stay glibc-only (see "musl" below).
+Supported: **Void glibc and musl, x86_64**. Both have published xbps packages;
+the musl one is built with `-Dgestures=disabled` because the gesture runtime
+blobs are glibc-only (see "musl" below).
 
 ## 1. Dependencies
 
@@ -86,20 +86,33 @@ service so greetd owns tty1. Reboot and log in.
 ## 5. Verification status
 
 Checked in containers from `ghcr.io/void-linux/void-glibc` (and
-`void-musl`), 2026-10-29:
+`void-musl`), 2026-10-30:
 
 - **Real package install (glibc)**: a clean `void-glibc` container with the
-  z-repo key and repository configured ran `xbps-install -S` and
-  `xbps-install -y singularity-desktop`; both packages installed with
-  `EXIT 0` and the session binaries landed in `/usr/bin`
-  (`singularity-desktop`, `singularity-labwc-session`, `labwc`, the apps).
+  z-repo key and repository configured upgraded from `0.1.0_4` to
+  `singularity-desktop-0.1.0_11` / `labwc-singularity-0.20.2_3` with `EXIT 0`.
+  The repodata SHA256 equals the downloaded asset SHA256 for both packages
+  (`bb5aabcbe2703a2d0e000c8589a5d3c71832495d785b3b023fdb61aee7bc0e31` and
+  `3a6d16afa1cf2574d71379d460b54dc84d41aedf1117e4c694220baed338ef5d`).
+- **Session**: with `WLR_BACKENDS=headless WLR_RENDERER=gles2` and a DRM
+  render node passed to the container, `singularity-labwc-session` starts
+  `labwc`, `singularity-desktop-session`, `singularity-polkit-agent` and
+  `singularity-desktop`; `xdg-desktop-portal` activates the
+  `org.freedesktop.impl.portal.desktop.singularity` backend over D-Bus and
+  `org.freedesktop.secrets` (keyring) activates on demand. The container has
+  no `/dev/fuse`, PipeWire daemon or seat, so the portal logs those warnings.
+- The package installs `wayland-sessions/singularity.desktop`, the three
+  session-bus activation files, and the artist-pack helpers under `/usr/bin`
+  (no `/usr/local` payload).
 - glibc x86_64: `meson setup -Dapps=all -Dgestures=disabled` and
   `meson compile` finish with all 4538 targets built.
 - labwc: both the `make` path (forced wlroots/scenefx wraps) and the xbps
   path (system wlroots 0.20 + patched scenefx) compile.
-- musl x86_64: dependencies installed, `meson setup -Dapps=all
-  -Dgestures=disabled` succeeds, and a full `meson compile` finishes
-  (binary linked against `/lib/ld-musl-x86_64.so.1`).
+- musl x86_64: `xbps-src pkg` builds
+  `singularity-desktop-0.1.0_11.x86_64-musl` and
+  `labwc-singularity-0.20.2_3.x86_64-musl`, and both are published with
+  `.sig2` in `z-repo-musl`. The source tree also builds with
+  `-Dgestures=disabled` (binary linked against `/lib/ld-musl-x86_64.so.1`).
 
 ## 6. Notes
 
@@ -117,7 +130,7 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   ship `bash`: `xbps-install -S bash` before `make prepare-deps`.
   `libexecinfo-devel` is needed (the crash handler uses `backtrace`); the
   glibc repo does not ship it and `prepare-deps` skips it there. The gesture
-  runtime blobs and the published xbps package stay glibc-only.
+  runtime blobs stay glibc-only, so the musl package is built without them.
 - Portals on runit: there is no `systemd --user` to start the backend unit, so
   the package installs session-bus activation files for
   `org.freedesktop.impl.portal.desktop.singularity` and `dev.sinty.ush.Portal`.
