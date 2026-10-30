@@ -217,8 +217,9 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   sudo xbps-install singularity-desktop
   ```
 
-  `singularity-desktop` pulls `labwc-singularity`; do not install stock
-  `labwc` alongside it.
+  `singularity-desktop` pulls `labwc-singularity`. Since rev 4 it declares
+  `provides`/`replaces`/`conflicts` against stock `labwc`, so a pre-existing
+  `labwc` is removed by the transaction instead of aborting it.
 
 - Publishing CI: `z-packages` dispatches an autobuild only when `z-repo` (or
   `z-repo-musl`) has no run in progress. During a 40-minute build, pushes to
