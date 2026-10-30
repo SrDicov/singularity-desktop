@@ -24,7 +24,8 @@ instead of running it.
   `qt6-xdgdesktopportal-platformtheme`
 - `appmenu-gtk-module` (runtime, optional) so third-party GTK apps publish their
   menu bar to the panel global menu. Debian/Ubuntu `appmenu-gtk3-module` (plus
-  `appmenu-gtk2-module` for GTK 2), Arch `appmenu-gtk-module` (AUR); on Fedora it
+  `appmenu-gtk2-module` for GTK 2), Arch `appmenu-gtk-module` (AUR), Void
+  `appmenu-gtk3-module` (the xbps package depends on it); on Fedora it
   is only in COPR. First-party Singularity apps do not need it. Firefox exports
   its menu over X11 only, so its global menu shows only under XWayland
   (`MOZ_ENABLE_WAYLAND=0`), not native Wayland

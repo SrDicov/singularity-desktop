@@ -43,8 +43,9 @@ environment cannot provide. No internal code TODO is open.
 
 - `-Dgestures=disabled` is the only supported spelling; `false` is not a valid
   meson `feature` value and no script or doc uses it.
-- `appmenu-gtk-module` is not packaged in Void. First-party apps are unaffected;
-  third-party GTK global menus are not supported.
+- `appmenu-gtk3-module` is the Void package name; it installs
+  `libappmenu-gtk-module.so` and `singularity-desktop` depends on it, so
+  third-party GTK global menus work.
 - The xbps template pins a specific meta-repo commit; bump `_commit`, the first
   distfile checksum and any changed submodule pins together. A docs-only change
   does not justify a rebuild; a change to `meson.build`, `data/` or `scripts/`

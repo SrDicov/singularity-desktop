@@ -18,12 +18,14 @@ sudo make prepare-deps
 ```
 
 `prepare-deps.sh` now has a Void case; its package list was checked against a
-Void glibc x86_64 repo index. Runtime extras: `dbus elogind greetd seatd
-xdg-desktop-portal xdg-user-dirs desktop-file-utils hicolor-icon-theme
-openntpd NetworkManager upower pipewire wireplumber`, plus `qt6-base` if you
-want Qt apps to follow the theme. `NetworkManager` is capitalised in xbps.
-`appmenu-gtk-module` is not packaged in Void: first-party apps are unaffected,
-third-party GTK global menus just won't appear.
+Void glibc x86_64 repo index. The xbps package pulls the full runtime set:
+`dbus elogind greetd xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs
+desktop-file-utils hicolor-icon-theme pipewire wireplumber NetworkManager
+upower bluez polkit appmenu-gtk3-module`. `NetworkManager` is capitalised in
+xbps. For a source install, add those packages yourself, plus one NTP daemon
+(`openntpd`, `ntp` or `chrony`) and `qt6-base` if you want Qt apps to follow
+the theme. Void's `appmenu-gtk3-module` installs `libappmenu-gtk-module.so`,
+the module the shell looks for, so third-party GTK global menus work.
 
 ## 2. Build
 
@@ -184,6 +186,7 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
   other packages wait for the next trigger instead of cancelling it. To force
   a build anyway:
   `gh workflow run autobuild.yml -R SrDicov/z-repo -f packages="singularity-desktop,labwc-singularity" -f force=true`.
-- `appmenu-gtk-module` decision: not supported. It is absent from the Void
-  repos and third-party GTK global menus are out of scope; first-party apps are
-  unaffected.
+- `appmenu-gtk3-module` is the Void name. It ships
+  `/usr/lib/gtk-3.0/modules/libappmenu-gtk-module.so`, exactly what the shell
+  probes, and `singularity-desktop` depends on it so third-party GTK global
+  menus work out of the box.

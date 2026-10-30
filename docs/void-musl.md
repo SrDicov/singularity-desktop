@@ -55,11 +55,14 @@ demand. The gesture runtime directory is absent, as intended.
 
 The musl runtime path is the same as glibc minus gestures:
 
-- runit services: `dbus`, `elogind`, `seatd`, `greetd`.
+- runit services: `dbus`, `elogind`, `greetd` (plus `seatd` only if you do not
+  use elogind for seat management).
 - date/time and hostname use the `pkexec` fallback (`polkit` + admin auth).
 - portal/keyring/polkit activate over D-Bus; there are no systemd units.
-- `appmenu-gtk-module` is not packaged in Void, so third-party GTK global menus
-  are not available.
+- the package depends on `NetworkManager`, `upower`, `pipewire`, `bluez`,
+  `polkit`, `xdg-desktop-portal-gtk` and `appmenu-gtk3-module`, so networking,
+  battery, audio, Bluetooth, printing fallbacks and third-party GTK global
+  menus work without extra steps.
 
 ## Known limits
 
