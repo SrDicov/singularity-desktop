@@ -20,12 +20,17 @@ sudo make prepare-deps
 `prepare-deps.sh` now has a Void case; its package list was checked against a
 Void glibc x86_64 repo index. The xbps package pulls the full runtime set:
 `dbus elogind greetd xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs
-desktop-file-utils hicolor-icon-theme pipewire wireplumber NetworkManager
-upower bluez polkit appmenu-gtk3-module`. `NetworkManager` is capitalised in
-xbps. For a source install, add those packages yourself, plus one NTP daemon
-(`openntpd`, `ntp` or `chrony`) and `qt6-base` if you want Qt apps to follow
-the theme. Void's `appmenu-gtk3-module` installs `libappmenu-gtk-module.so`,
-the module the shell looks for, so third-party GTK global menus work.
+xdg-utils desktop-file-utils hicolor-icon-theme pipewire wireplumber
+NetworkManager upower bluez polkit fprintd cups shadow rtkit
+appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps. `shadow` is
+required because `install-greeter.sh` creates the `greetd` user with
+`useradd`. `fprintd` is D-Bus activated; the other daemons need their runit
+service linked (`NetworkManager`, `bluetoothd`, `cupsd`, `rtkit`) unless you
+already use an alternative (`dhcpcd`/`connman` for networking). For a source
+install, add those packages yourself, plus one NTP daemon (`openntpd`, `ntp`
+or `chrony`) and `qt6-base` if you want Qt apps to follow the theme. Void's
+`appmenu-gtk3-module` installs `libappmenu-gtk-module.so`, the module the shell
+looks for, so third-party GTK global menus work.
 
 ## 2. Build
 
@@ -54,7 +59,7 @@ make install            # sudo preferred, doas fallback, run0 only on systemd ho
 From the `singularity-desktop` xbps package there is nothing to deploy: the
 package already ships the session entry, the portal/keyring D-Bus activation
 files, the polkit agent and every asset under `/usr`. Do **not** run
-`deploy-to-host.sh` after `xbps-install`; enable `dbus`/`elogind`, run
+`deploy-to-host.sh` after `xbps-install`; enable the runit services below, run
 `install-greeter.sh` (section 4) and reboot. The script exists only for source
 installs under `/opt/local`.
 
@@ -66,6 +71,11 @@ services to enable:
 ```sh
 sudo ln -s /etc/sv/dbus /var/service/
 sudo ln -s /etc/sv/elogind /var/service/
+sudo ln -s /etc/sv/NetworkManager /var/service/   # or keep dhcpcd/connman
+sudo ln -s /etc/sv/bluetoothd /var/service/
+sudo ln -s /etc/sv/cupsd /var/service/
+sudo ln -s /etc/sv/rtkit /var/service/
+# fprintd is D-Bus activated; no service to enable.
 ```
 
 Prefix defaults to `/opt/local`; packagers can set `SINGULARITY_PREFIX=/usr`.
