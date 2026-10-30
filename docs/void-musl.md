@@ -60,7 +60,11 @@ The musl runtime path is the same as glibc minus gestures:
 - date/time and hostname use the `pkexec` fallback (`polkit` + admin auth).
 - portal/keyring/polkit activate over D-Bus; there are no systemd units.
 - the package depends on `NetworkManager`, `upower`, `pipewire`, `bluez`,
-  `polkit`, `fprintd`, `cups`, `shadow`, `rtkit`, `xdg-utils`,
+  `polkit`, `fprintd`, `cups`, `shadow`, `rtkit`, `nftables`,
+  `libheif-tools`, `sane`, `udisks2` and the filesystem tools (`e2fsprogs`,
+  `btrfs-progs`, `xfsprogs`, `exfatprogs`, `dosfstools`, `ntfs-3g`,
+  `cryptsetup`, `gvfs` with its smb/mtp/afc/gphoto2 backends, `flatpak`),
+  `xdg-utils`,
   `xdg-desktop-portal-gtk` and `appmenu-gtk3-module`, so networking, battery,
   audio, Bluetooth, printing, fingerprint enrolment, greeter setup, file
   opening and third-party GTK global menus work without extra packages.

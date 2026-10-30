@@ -21,9 +21,11 @@ sudo make prepare-deps
 Void glibc x86_64 repo index. The xbps package pulls the full runtime set:
 `dbus elogind greetd xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs
 xdg-utils desktop-file-utils hicolor-icon-theme pipewire wireplumber
-NetworkManager upower bluez polkit fprintd cups shadow rtkit
-appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps. `shadow` is
-required because `install-greeter.sh` creates the `greetd` user with
+NetworkManager upower bluez polkit fprintd cups shadow rtkit nftables
+libheif-tools sane udisks2 e2fsprogs btrfs-progs xfsprogs exfatprogs
+dosfstools ntfs-3g cryptsetup gvfs gvfs-smb gvfs-mtp gvfs-afc gvfs-gphoto2
+flatpak appmenu-gtk3-module`. `NetworkManager` is capitalised in xbps.
+`shadow` is required because `install-greeter.sh` creates the `greetd` user with
 `useradd`. `fprintd` is D-Bus activated; the other daemons need their runit
 service linked (`NetworkManager`, `bluetoothd`, `cupsd`, `rtkit`) unless you
 already use an alternative (`dhcpcd`/`connman` for networking). For a source
@@ -141,6 +143,18 @@ Checked in containers from `ghcr.io/void-linux/void-glibc` (and
 
 ## 6. Notes
 
+- Updates: Void's `PackageKit` ships only the dummy/test backends, so the
+  desktop uses its own xbps provider. `auto` picks it whenever
+  `xbps-install` exists: checks run unprivileged (`xbps-install -un`),
+  download and install run through `pkexec`. It can be forced with
+  `Backend=xbps` in `singularity/updates.conf`.
+- Files and the software store: `gvfs` (+ `smb`/`mtp`/`afc`/`gphoto2`
+  backends) makes network shares and phones appear in Files, and `flatpak`
+  backs the Store app. Samba server and Avahi are optional extras for
+  sharing (`samba`, `avahi`).
+- Disks/backups: `udisks2` plus the filesystem tools (`e2fsprogs`,
+  `btrfs-progs`, `xfsprogs`, `exfatprogs`, `dosfstools`, `ntfs-3g`,
+  `cryptsetup`) cover every format option the Disks app offers.
 - Date/time, timezone, NTP toggle and hostname work via `pkexec` fallback
   (needs `polkit` + admin auth: root password or a wheel user).
 - NTP toggle manages the runit service (`/etc/sv/openntpd` from `openntpd`,
